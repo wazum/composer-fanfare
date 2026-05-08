@@ -30,6 +30,92 @@ jobs:
       - name: Run tests
         run: vendor/bin/phpunit
 
+  e2e:
+    name: E2E · PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+
+      - name: Set up demo project at /tmp/demo
+        env:
+          PLUGIN_PATH: ${{ github.workspace }}
+        run: |
+          mkdir -p /tmp/demo
+          cd /tmp/demo
+          cp "${PLUGIN_PATH}/art/example-banner.txt" banner.txt
+          cat > composer.json <<JSON
+          {
+              "name": "test/fanfare-e2e",
+              "version": "0.0.1",
+              "type": "project",
+              "repositories": [
+                  {"type": "path", "url": "${PLUGIN_PATH}", "options": {"symlink": true}}
+              ],
+              "require": {"wazum/composer-fanfare": "*"},
+              "config": {"allow-plugins": {"wazum/composer-fanfare": true}},
+              "extra": {
+                  "fanfare": {
+                      "template": "banner.txt",
+                      "colors": "sunset"
+                  }
+              },
+              "minimum-stability": "dev"
+          }
+          JSON
+
+      - name: Colored output is rendered with --ansi
+        working-directory: /tmp/demo
+        run: |
+          output=$(composer update --ansi --no-interaction 2>&1)
+          echo "$output"
+          echo "$output" | grep -qF '░' || { echo "::error::banner content missing"; exit 1; }
+          echo "$output" | grep -qF $'\x1b[38;2;' || { echo "::error::truecolor escapes missing"; exit 1; }
+          echo "$output" | grep -qF 'PHP ' || { echo "::error::footer missing"; exit 1; }
+
+      - name: Plain text fallback in non-TTY CI
+        working-directory: /tmp/demo
+        run: |
+          rm -rf vendor composer.lock
+          output=$(composer update --no-interaction 2>&1)
+          echo "$output"
+          echo "$output" | grep -qF '░' || { echo "::error::banner content missing"; exit 1; }
+          if echo "$output" | grep -qF $'\x1b['; then
+            echo "::error::ANSI escapes present in non-TTY CI output"; exit 1
+          fi
+
+      - name: NO_COLOR forces plain even with --ansi
+        working-directory: /tmp/demo
+        env:
+          NO_COLOR: '1'
+        run: |
+          rm -rf vendor composer.lock
+          output=$(composer update --ansi --no-interaction 2>&1)
+          echo "$output"
+          echo "$output" | grep -qF '░' || { echo "::error::banner content missing"; exit 1; }
+          if echo "$output" | grep -qF $'\x1b[38;2;'; then
+            echo "::error::truecolor escape present despite NO_COLOR"; exit 1
+          fi
+
+      - name: --quiet suppresses banner entirely
+        working-directory: /tmp/demo
+        run: |
+          rm -rf vendor composer.lock
+          output=$(composer update --ansi --no-interaction --quiet 2>&1)
+          if echo "$output" | grep -qF '░'; then
+            echo "::error::banner appeared despite --quiet"; exit 1
+          fi
+
   static-analysis:
     name: Static analysis
     runs-on: ubuntu-latest
