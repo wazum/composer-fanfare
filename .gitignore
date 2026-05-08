@@ -1,0 +1,11 @@
+/vendor/
+/composer.lock
+/demo/
+/.phpunit.cache/
+/.phpunit.result.cache
+/coverage/
+/.ddev/
+/docs/
+/CLAUDE.md
+/.claude/
+.DS_Store
