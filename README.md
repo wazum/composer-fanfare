@@ -56,6 +56,17 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
 > [!NOTE]
 > The banner falls back to plain text when `NO_COLOR` is set or output isn't a TTY. Composer's `--quiet` mode suppresses it entirely via the IO layer.
 
+### Color depth
+
+Truecolor escapes are emitted by default. The renderer downgrades automatically based on `COLORTERM` and `TERM`:
+
+| Detected support | Trigger | Output |
+|---|---|---|
+| 24-bit | `COLORTERM=truecolor` / `24bit`, or any modern terminal | `\033[38;2;R;G;Bm` |
+| 256-color | `TERM` matching `*-256color` | `\033[38;5;Nm` (xterm 6×6×6 cube + 24-step grayscale ramp) |
+| 16-color | `TERM=ansi` / `vt100` / `linux` | nearest-neighbor mapping to the standard ANSI palette |
+| Plain | `NO_COLOR=1`, `TERM=dumb`, or non-TTY | banner content rendered without escapes |
+
 ### Preset gallery
 
 <table>

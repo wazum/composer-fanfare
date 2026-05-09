@@ -13,7 +13,6 @@ final readonly class Renderer
 {
     private const ANSI_RESET = "\033[0m";
     private const ANSI_DIM = "\033[2m";
-    private const ANSI_TRUECOLOR_FG_FMT = "\033[38;2;%d;%d;%dm";
     private const HEX_PATTERN = '/^[0-9a-fA-F]{6}$/';
 
     public function __construct(private IOInterface $io)
@@ -37,7 +36,8 @@ final readonly class Renderer
         }
 
         $stops = $this->resolveStops($colors);
-        $useColor = null !== $stops && $this->supportsColor();
+        $colorSupport = ColorSupport::detect($this->io);
+        $useColor = null !== $stops && ColorSupport::None !== $colorSupport;
 
         $rowCount = count($lines);
         $maxWidth = Direction::Diagonal === $direction ? $this->maxLineWidth($lines) : 0;
@@ -49,9 +49,9 @@ final readonly class Renderer
                 continue;
             }
             $this->io->writeRaw(match ($direction) {
-                Direction::Vertical => $this->colorizeWholeLine($line, $this->sampleGradient($stops, $this->fraction($row, $rowCount))),
-                Direction::Horizontal => $this->colorizeHorizontal($line, $stops),
-                Direction::Diagonal => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops),
+                Direction::Vertical => $this->colorizeWholeLine($line, $this->sampleGradient($stops, $this->fraction($row, $rowCount)), $colorSupport),
+                Direction::Horizontal => $this->colorizeHorizontal($line, $stops, $colorSupport),
+                Direction::Diagonal => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops, $colorSupport),
             });
         }
 
@@ -59,15 +59,6 @@ final readonly class Renderer
             $this->io->writeRaw($useColor ? self::ANSI_DIM.$statusLine.self::ANSI_RESET : $statusLine);
         }
         $this->io->writeRaw('');
-    }
-
-    private function supportsColor(): bool
-    {
-        if (false !== getenv('NO_COLOR')) {
-            return false;
-        }
-
-        return $this->io->isDecorated();
     }
 
     /**
@@ -94,17 +85,15 @@ final readonly class Renderer
     /**
      * @param array{int, int, int} $rgb
      */
-    private function colorizeWholeLine(string $text, array $rgb): string
+    private function colorizeWholeLine(string $text, array $rgb, ColorSupport $colorSupport): string
     {
-        [$r, $g, $b] = $rgb;
-
-        return sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b).$text.self::ANSI_RESET;
+        return $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]).$text.self::ANSI_RESET;
     }
 
     /**
      * @param non-empty-list<array{int, int, int}> $stops
      */
-    private function colorizeHorizontal(string $text, array $stops): string
+    private function colorizeHorizontal(string $text, array $stops, ColorSupport $colorSupport): string
     {
         if ('' === $text) {
             return '';
@@ -132,8 +121,7 @@ final readonly class Renderer
             $rgb = $this->sampleGradient($stops, $this->fraction($visibleIndex, $visibleCount));
             ++$visibleIndex;
             if ($rgb !== $previousRgb) {
-                [$r, $g, $b] = $rgb;
-                $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b);
+                $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
                 $previousRgb = $rgb;
             }
             $output .= $char;
@@ -145,7 +133,7 @@ final readonly class Renderer
     /**
      * @param non-empty-list<array{int, int, int}> $stops
      */
-    private function colorizeDiagonal(string $text, int $row, int $rowCount, int $maxWidth, array $stops): string
+    private function colorizeDiagonal(string $text, int $row, int $rowCount, int $maxWidth, array $stops, ColorSupport $colorSupport): string
     {
         if ('' === $text) {
             return '';
@@ -162,8 +150,7 @@ final readonly class Renderer
             $columnFraction = $maxWidth > 1 ? $col / ($maxWidth - 1) : 0.0;
             $rgb = $this->sampleGradient($stops, ($rowFraction + $columnFraction) / 2);
             if ($rgb !== $previousRgb) {
-                [$r, $g, $b] = $rgb;
-                $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b);
+                $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
                 $previousRgb = $rgb;
             }
             $output .= $char;

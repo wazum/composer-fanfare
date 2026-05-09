@@ -74,14 +74,46 @@ jobs:
           }
           JSON
 
-      - name: Colored output is rendered with --ansi
+      - name: Truecolor output is rendered with --ansi
         working-directory: /tmp/demo
+        env:
+          COLORTERM: truecolor
         run: |
           output=$(composer update --ansi --no-interaction 2>&1)
           echo "$output"
           echo "$output" | grep -qF '░' || { echo "::error::banner content missing"; exit 1; }
           echo "$output" | grep -qF $'\x1b[38;2;' || { echo "::error::truecolor escapes missing"; exit 1; }
           echo "$output" | grep -qF 'PHP ' || { echo "::error::footer missing"; exit 1; }
+
+      - name: 256-color fallback (TERM=xterm-256color)
+        working-directory: /tmp/demo
+        env:
+          TERM: xterm-256color
+          COLORTERM: ''
+        run: |
+          rm -rf vendor composer.lock
+          output=$(composer update --ansi --no-interaction 2>&1)
+          echo "$output"
+          echo "$output" | grep -qF '░' || { echo "::error::banner content missing"; exit 1; }
+          echo "$output" | grep -qF $'\x1b[38;5;' || { echo "::error::256-color escapes missing"; exit 1; }
+          if echo "$output" | grep -qF $'\x1b[38;2;'; then
+            echo "::error::truecolor escape present despite TERM=xterm-256color"; exit 1
+          fi
+
+      - name: 16-color fallback (TERM=ansi)
+        working-directory: /tmp/demo
+        env:
+          TERM: ansi
+          COLORTERM: ''
+        run: |
+          rm -rf vendor composer.lock
+          output=$(composer update --ansi --no-interaction 2>&1)
+          echo "$output"
+          echo "$output" | grep -qF '░' || { echo "::error::banner content missing"; exit 1; }
+          if echo "$output" | grep -qE $'\x1b\\[(38;2;|38;5;)'; then
+            echo "::error::higher-than-16-color escape present despite TERM=ansi"; exit 1
+          fi
+          echo "$output" | grep -qE $'\x1b\\[(3[0-7]|9[0-7])m' || { echo "::error::basic ANSI color escape missing"; exit 1; }
 
       - name: Plain text fallback in non-TTY CI
         working-directory: /tmp/demo

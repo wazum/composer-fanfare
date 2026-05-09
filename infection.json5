@@ -24,11 +24,16 @@
         },
         // random_int bounds are inherently non-deterministic to test without
         // injecting an RNG seam. The bounds are correct by construction.
+        // The first loop iteration always overwrites $bestIndex regardless of its
+        // initial value (any distance < PHP_INT_MAX), so swapping 0 → -1 is
+        // observationally equivalent.
         "DecrementInteger": {
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
                 "Wazum\\ComposerFanfare\\Renderer::render",
                 "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
+                "Wazum\\ComposerFanfare\\ColorSupport::quantizeChannel",
+                "Wazum\\ComposerFanfare\\ColorSupport::rgbToBasicIndex",
             ],
         },
         "IncrementInteger": {
@@ -73,6 +78,7 @@
                 "Wazum\\ComposerFanfare\\Renderer::sampleGradient",
                 "Wazum\\ComposerFanfare\\Renderer::lerpRgb",
                 "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
+                "Wazum\\ComposerFanfare\\ColorSupport::rgbToCubeIndex",
             ],
         },
         // round vs ceil produce identical results for half-integer fractions used

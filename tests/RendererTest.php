@@ -424,6 +424,43 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
+    public function rendersTwoFiveSixEscapesWhenTerminalSupports256(): void
+    {
+        putenv('TERM=xterm-256color');
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['x'], ['#ff0000'], null);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[38;5;", $output);
+        self::assertStringNotContainsString("\033[38;2;", $output);
+    }
+
+    #[Test]
+    public function rendersSixteenColorEscapesOnBasicTerminal(): void
+    {
+        putenv('TERM=ansi');
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['x'], ['#ff0000'], null);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[91m", $output);
+        self::assertStringNotContainsString("\033[38;2;", $output);
+        self::assertStringNotContainsString("\033[38;5;", $output);
+    }
+
+    #[Test]
+    public function rendersPlainOnDumbTerminal(): void
+    {
+        putenv('TERM=dumb');
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['x'], ['#ff0000'], null);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('x', $output);
+        self::assertStringNotContainsString("\033[", $output);
+    }
+
+    #[Test]
     public function bannerHasLeadingAndTrailingBlankLines(): void
     {
         $io = $this->decoratedIo();
@@ -438,6 +475,8 @@ final class RendererTest extends TestCase
     protected function tearDown(): void
     {
         putenv('NO_COLOR');
+        putenv('TERM');
+        putenv('COLORTERM');
     }
 
     private function decoratedIo(): BufferIO
