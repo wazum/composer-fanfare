@@ -17,13 +17,13 @@ use Composer\Script\ScriptEvents;
  */
 final class Plugin implements PluginInterface, EventSubscriberInterface
 {
-    private const CONFIG_KEY          = 'fanfare';
-    private const HEX_PATTERN         = '/^#?[0-9a-fA-F]{6}$/';
-    private const WINDOWS_PATH        = '#^[A-Za-z]:[\\\\/]#';
-    private const STREAM_WRAPPER      = '#^[a-z][a-z0-9+.\-]*://#i';
-    private const MAX_TEMPLATE_BYTES  = 16384;
+    private const CONFIG_KEY = 'fanfare';
+    private const HEX_PATTERN = '/^#?[0-9a-fA-F]{6}$/';
+    private const WINDOWS_PATH = '#^[A-Za-z]:[\\\\/]#';
+    private const STREAM_WRAPPER = '#^[a-z][a-z0-9+.\-]*://#i';
+    private const MAX_TEMPLATE_BYTES = 16384;
     private const CONTROL_CHARS_RANGE = "\0..\37";
-    private const RANDOM_KEYWORD      = 'random';
+    private const RANDOM_KEYWORD = 'random';
 
     private Composer $composer;
     private IOInterface $io;
@@ -34,16 +34,20 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         $this->io = $io;
     }
 
-    public function deactivate(Composer $composer, IOInterface $io): void {}
+    public function deactivate(Composer $composer, IOInterface $io): void
+    {
+    }
 
-    public function uninstall(Composer $composer, IOInterface $io): void {}
+    public function uninstall(Composer $composer, IOInterface $io): void
+    {
+    }
 
     /** @return array<string, string> */
     public static function getSubscribedEvents(): array
     {
         return [
             ScriptEvents::POST_INSTALL_CMD => 'onPostCmd',
-            ScriptEvents::POST_UPDATE_CMD  => 'onPostCmd',
+            ScriptEvents::POST_UPDATE_CMD => 'onPostCmd',
         ];
     }
 
@@ -69,12 +73,12 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             return;
         }
         $template = trim($template);
-        if ($template === '') {
+        if ('' === $template) {
             return;
         }
 
         $contents = $this->loadTemplate($template);
-        if ($contents === null) {
+        if (null === $contents) {
             return;
         }
 
@@ -92,13 +96,13 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
 
     private function resolveDirection(mixed $value): Direction
     {
-        if ($value === null) {
+        if (null === $value) {
             return Direction::Vertical;
         }
         if (is_string($value)) {
             $value = trim($value);
             $direction = Direction::tryFrom($value);
-            if ($direction !== null) {
+            if (null !== $direction) {
                 return $direction;
             }
             $this->io->writeError(sprintf(
@@ -116,23 +120,26 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
     {
         if (is_string($value)) {
             $value = trim($value);
-            if (preg_match(self::HEX_PATTERN, $value) === 1) {
+            if (1 === preg_match(self::HEX_PATTERN, $value)) {
                 return [$value];
             }
-            if ($value === self::RANDOM_KEYWORD) {
+            if (self::RANDOM_KEYWORD === $value) {
                 $cases = Preset::cases();
+
                 return $cases[random_int(0, count($cases) - 1)]->colors();
             }
             $preset = Preset::tryFrom($value);
-            if ($preset === null) {
+            if (null === $preset) {
                 $this->io->writeError(sprintf(
                     '<warning>Unknown preset "%s" • available: %s, %s</warning>',
                     $value,
                     implode(', ', Preset::names()),
                     self::RANDOM_KEYWORD,
                 ));
+
                 return null;
             }
+
             return $preset->colors();
         }
 
@@ -143,11 +150,12 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
                     continue;
                 }
                 $entry = trim($entry);
-                if (preg_match(self::HEX_PATTERN, $entry) === 1) {
+                if (1 === preg_match(self::HEX_PATTERN, $entry)) {
                     $hex[] = $entry;
                 }
             }
-            return $hex === [] ? null : $hex;
+
+            return [] === $hex ? null : $hex;
         }
 
         return null;
@@ -160,17 +168,17 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         $rootPackage = $this->composer->getPackage();
         $name = $rootPackage->getName();
         $version = $rootPackage->getPrettyVersion();
-        if ($name !== '') {
-            $parts[] = $version !== '' ? $name . ' ' . $version : $name;
+        if ('' !== $name) {
+            $parts[] = '' !== $version ? $name.' '.$version : $name;
         }
 
-        $parts[] = 'PHP ' . PHP_VERSION;
+        $parts[] = 'PHP '.PHP_VERSION;
 
         try {
             $locker = $this->composer->getLocker();
             if ($locker->isLocked()) {
                 $count = count($locker->getLockedRepository()->getPackages());
-                $parts[] = sprintf('%d %s', $count, $count === 1 ? 'package' : 'packages');
+                $parts[] = sprintf('%d %s', $count, 1 === $count ? 'package' : 'packages');
             }
         } catch (\Throwable) {
             // status line gracefully degrades without the package count
@@ -181,45 +189,52 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
 
     private function loadTemplate(string $template): ?string
     {
-        if (preg_match(self::STREAM_WRAPPER, $template) === 1) {
+        if (1 === preg_match(self::STREAM_WRAPPER, $template)) {
             $this->warnTemplate($template, 'outside project root');
+
             return null;
         }
 
         $rootReal = realpath($this->rootDir());
-        if ($rootReal === false) {
+        if (false === $rootReal) {
             $this->warnTemplate($template, 'not found');
+
             return null;
         }
 
         $candidate = $this->isAbsolutePath($template)
             ? $template
-            : $rootReal . DIRECTORY_SEPARATOR . $template;
+            : $rootReal.DIRECTORY_SEPARATOR.$template;
         $real = realpath($candidate);
-        if ($real === false) {
+        if (false === $real) {
             $this->warnTemplate($template, 'not found');
+
             return null;
         }
 
-        if (!str_starts_with($real . DIRECTORY_SEPARATOR, $rootReal . DIRECTORY_SEPARATOR)) {
+        if (!str_starts_with($real.DIRECTORY_SEPARATOR, $rootReal.DIRECTORY_SEPARATOR)) {
             $this->warnTemplate($template, 'outside project root');
+
             return null;
         }
 
         if (!is_file($real) || !is_readable($real)) {
             $this->warnTemplate($template, 'not found');
+
             return null;
         }
 
         $size = filesize($real);
-        if ($size === false || $size > self::MAX_TEMPLATE_BYTES) {
+        if (false === $size || $size > self::MAX_TEMPLATE_BYTES) {
             $this->warnTemplate($template, 'too large');
+
             return null;
         }
 
         $contents = @file_get_contents($real);
-        if ($contents === false) {
+        if (false === $contents) {
             $this->warnTemplate($template, 'could not be read');
+
             return null;
         }
 
@@ -240,18 +255,18 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         $composerFile = Factory::getComposerFile();
         $absolute = realpath($composerFile);
 
-        return $absolute !== false ? dirname($absolute) : dirname($composerFile);
+        return false !== $absolute ? dirname($absolute) : dirname($composerFile);
     }
 
     private function isAbsolutePath(string $path): bool
     {
-        if ($path === '') {
+        if ('' === $path) {
             return false;
         }
-        if ($path[0] === '/') {
+        if ('/' === $path[0]) {
             return true;
         }
 
-        return preg_match(self::WINDOWS_PATH, $path) === 1;
+        return 1 === preg_match(self::WINDOWS_PATH, $path);
     }
 }

@@ -9,9 +9,9 @@ namespace Wazum\ComposerFanfare;
  */
 enum Direction: string
 {
-    case Vertical   = 'vertical';
+    case Vertical = 'vertical';
     case Horizontal = 'horizontal';
-    case Diagonal   = 'diagonal';
+    case Diagonal = 'diagonal';
 
     /** @return list<string> */
     public static function names(): array

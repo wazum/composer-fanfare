@@ -16,27 +16,11 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\StreamOutput;
 use Wazum\ComposerFanfare\Plugin;
+use Wazum\ComposerFanfare\Preset;
 
 final class PluginTest extends TestCase
 {
     private string $fixtureDir = '';
-
-    protected function setUp(): void
-    {
-        $this->fixtureDir = sys_get_temp_dir() . '/composer-fanfare-' . bin2hex(random_bytes(4));
-        mkdir($this->fixtureDir, 0o700, true);
-    }
-
-    protected function tearDown(): void
-    {
-        if ($this->fixtureDir !== '' && is_dir($this->fixtureDir)) {
-            foreach (glob($this->fixtureDir . '/*') ?: [] as $file) {
-                @unlink($file);
-            }
-            @rmdir($this->fixtureDir);
-        }
-        putenv('COMPOSER');
-    }
 
     #[Test]
     public function getSubscribedEventsReturnsBothScriptEvents(): void
@@ -44,7 +28,7 @@ final class PluginTest extends TestCase
         self::assertSame(
             [
                 ScriptEvents::POST_INSTALL_CMD => 'onPostCmd',
-                ScriptEvents::POST_UPDATE_CMD  => 'onPostCmd',
+                ScriptEvents::POST_UPDATE_CMD => 'onPostCmd',
             ],
             Plugin::getSubscribedEvents(),
         );
@@ -76,6 +60,24 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function templateThatIsADirectoryEmitsWarning(): void
+    {
+        mkdir($this->fixtureDir.'/banner.txt');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        rmdir($this->fixtureDir.'/banner.txt');
+
+        self::assertStringContainsString('Template "banner.txt" not found', $io->getOutput());
+    }
+
+    #[Test]
     public function knownPresetExpandsToPalette(): void
     {
         $this->writeBanner("a\nb\nc");
@@ -93,6 +95,34 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;228;3;3ma\033[0m", $output);
         self::assertStringContainsString("\033[38;2;128;183;19mb\033[0m", $output);
         self::assertStringContainsString("\033[38;2;117;7;135mc\033[0m", $output);
+    }
+
+    #[Test]
+    public function everyPresetRendersItsFirstStopOnSingleLine(): void
+    {
+        $this->writeBanner('x');
+        $this->pinComposerFile();
+
+        foreach (Preset::cases() as $preset) {
+            $io = $this->decoratedIo();
+            $composer = $this->makeComposer([
+                'fanfare' => ['template' => 'banner.txt', 'colors' => $preset->value],
+            ]);
+
+            $this->runPlugin($composer, $io);
+
+            $firstStop = ltrim($preset->colors()[0], '#');
+            $parsed = sscanf($firstStop, '%02x%02x%02x');
+            self::assertIsArray($parsed);
+            [$red, $green, $blue] = $parsed;
+            $expectedEscape = sprintf("\033[38;2;%d;%d;%dmx", $red, $green, $blue);
+
+            self::assertStringContainsString(
+                $expectedEscape,
+                $io->getOutput(),
+                "Preset {$preset->value} should render its first stop",
+            );
+        }
     }
 
     #[Test]
@@ -129,6 +159,22 @@ final class PluginTest extends TestCase
         $this->runPlugin($composer, $io);
 
         self::assertStringContainsString('hi', $io->getOutput());
+    }
+
+    #[Test]
+    public function singleHexStringInColorsRendersAsThatColor(): void
+    {
+        $this->writeBanner('x');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString("\033[38;2;255;0;0mx\033[0m", $io->getOutput());
     }
 
     #[Test]
@@ -243,7 +289,7 @@ final class PluginTest extends TestCase
     #[Test]
     public function crlfTemplateIsNormalizedToLf(): void
     {
-        file_put_contents($this->fixtureDir . '/banner.txt', "line one\r\nline two\r\n");
+        file_put_contents($this->fixtureDir.'/banner.txt', "line one\r\nline two\r\n");
         $this->pinComposerFile();
 
         $io = $this->decoratedIo();
@@ -255,8 +301,32 @@ final class PluginTest extends TestCase
 
         $output = $io->getOutput();
         self::assertStringNotContainsString("\r", $output);
-        self::assertStringContainsString("\033[38;2;255;0;0mline one\033[0m", $output);
-        self::assertStringContainsString("\033[38;2;255;0;0mline two\033[0m", $output);
+        // Crucially: no extra blank line between the two banner rows (would happen
+        // if "\r\n" weren't normalized to a single "\n" by the str_replace pair).
+        self::assertMatchesRegularExpression(
+            '/line one\033\[0m\n\033\[38;2;255;0;0mline two/',
+            $output,
+        );
+    }
+
+    #[Test]
+    public function bareCrLineEndingsAreNormalizedToLf(): void
+    {
+        file_put_contents($this->fixtureDir.'/banner.txt', "old\rstyle\rbanner");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => ['#ff0000']],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringNotContainsString("\r", $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mold\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mstyle\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mbanner\033[0m", $output);
     }
 
     #[Test]
@@ -290,9 +360,69 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function siblingDirectoryWithSamePrefixIsRejected(): void
+    {
+        // Create a sibling directory whose realpath shares a prefix with the project root
+        // but isn't the project root itself.
+        $sibling = $this->fixtureDir.'-sibling';
+        mkdir($sibling);
+        $bannerPath = $sibling.'/banner.txt';
+        file_put_contents($bannerPath, 'leak');
+
+        try {
+            $this->pinComposerFile();
+
+            $io = $this->decoratedIo();
+            $composer = $this->makeComposer([
+                'fanfare' => ['template' => $bannerPath],
+            ]);
+
+            $this->runPlugin($composer, $io);
+
+            self::assertStringContainsString('outside project root', $io->getOutput());
+        } finally {
+            @unlink($bannerPath);
+            @rmdir($sibling);
+        }
+    }
+
+    #[Test]
+    public function templateAtMaxBytesIsAccepted(): void
+    {
+        file_put_contents($this->fixtureDir.'/banner.txt', str_repeat('x', 16384));
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => ['#ff0000']],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringNotContainsString('too large', $output);
+    }
+
+    #[Test]
+    public function templateOneByteOverMaxIsRejected(): void
+    {
+        file_put_contents($this->fixtureDir.'/banner.txt', str_repeat('x', 16385));
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => ['#ff0000']],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString('too large', $io->getOutput());
+    }
+
+    #[Test]
     public function oversizedTemplateIsRejected(): void
     {
-        file_put_contents($this->fixtureDir . '/banner.txt', str_repeat('x', 20000));
+        file_put_contents($this->fixtureDir.'/banner.txt', str_repeat('x', 20000));
         $this->pinComposerFile();
 
         $io = $this->decoratedIo();
@@ -328,7 +458,7 @@ final class PluginTest extends TestCase
     public function trailingBlankLinesInTemplateArePreserved(): void
     {
         // Three trailing newlines: one terminator + two intentional blank rows.
-        file_put_contents($this->fixtureDir . '/banner.txt', "hello\n\n\n");
+        file_put_contents($this->fixtureDir.'/banner.txt', "hello\n\n\n");
         $this->pinComposerFile();
 
         $io = $this->decoratedIo();
@@ -358,8 +488,8 @@ final class PluginTest extends TestCase
         $composer = $this->makeComposer([
             'fanfare' => [
                 'template' => 'banner.txt',
-                'colors'   => ['#ff0000'],
-                'footer'   => false,
+                'colors' => ['#ff0000'],
+                'footer' => false,
             ],
         ]);
 
@@ -384,7 +514,7 @@ final class PluginTest extends TestCase
 
         $this->runPlugin($composer, $io);
 
-        self::assertStringContainsString('PHP ' . PHP_VERSION, $io->getOutput());
+        self::assertStringContainsString('PHP '.PHP_VERSION, $io->getOutput());
     }
 
     #[Test]
@@ -448,8 +578,8 @@ final class PluginTest extends TestCase
         $io = $this->decoratedIo();
         $composer = $this->makeComposer([
             'fanfare' => [
-                'template'  => '  banner.txt  ',
-                'colors'    => '  fire  ',
+                'template' => '  banner.txt  ',
+                'colors' => '  fire  ',
                 'direction' => "\thorizontal\n",
             ],
         ]);
@@ -473,7 +603,7 @@ final class PluginTest extends TestCase
         $composer = $this->makeComposer([
             'fanfare' => [
                 'template' => 'banner.txt',
-                'colors'   => ['  #ff0000  ', "\t#00ff00\n"],
+                'colors' => ['  #ff0000  ', "\t#00ff00\n"],
             ],
         ]);
 
@@ -481,6 +611,28 @@ final class PluginTest extends TestCase
 
         $output = $io->getOutput();
         self::assertStringContainsString("\033[38;2;255;0;0ma\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
+    }
+
+    #[Test]
+    public function nonStringEntryInColorsArrayIsSkipped(): void
+    {
+        $this->writeBanner("a\nb");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => [42, false, '#00ff00', null],
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        // Only the valid #00ff00 hex is kept; non-strings are silently skipped
+        self::assertStringContainsString("\033[38;2;0;255;0ma\033[0m", $output);
         self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
     }
 
@@ -523,6 +675,23 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
     }
 
+    protected function setUp(): void
+    {
+        $this->fixtureDir = sys_get_temp_dir().'/composer-fanfare-'.bin2hex(random_bytes(4));
+        mkdir($this->fixtureDir, 0o700, true);
+    }
+
+    protected function tearDown(): void
+    {
+        if ('' !== $this->fixtureDir && is_dir($this->fixtureDir)) {
+            foreach (glob($this->fixtureDir.'/*') ?: [] as $file) {
+                @unlink($file);
+            }
+            @rmdir($this->fixtureDir);
+        }
+        putenv('COMPOSER');
+    }
+
     /**
      * @param array<string, mixed> $extra
      */
@@ -538,14 +707,14 @@ final class PluginTest extends TestCase
 
     private function writeBanner(string $contents): void
     {
-        file_put_contents($this->fixtureDir . '/banner.txt', $contents);
+        file_put_contents($this->fixtureDir.'/banner.txt', $contents);
     }
 
     private function pinComposerFile(): void
     {
-        $composerJson = $this->fixtureDir . '/composer.json';
+        $composerJson = $this->fixtureDir.'/composer.json';
         file_put_contents($composerJson, '{"name":"wazum/fanfare-test"}');
-        putenv('COMPOSER=' . $composerJson);
+        putenv('COMPOSER='.$composerJson);
     }
 
     private function runPlugin(Composer $composer, BufferIO $io): void
@@ -563,7 +732,7 @@ final class PluginTest extends TestCase
     private function makeLockerWithPackageCount(int $count): Locker
     {
         $packages = [];
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count; ++$i) {
             $packages[] = new RootPackage(sprintf('vendor/dep-%d', $i), '1.0.0', '1.0.0');
         }
 

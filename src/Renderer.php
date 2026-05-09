@@ -11,18 +11,20 @@ use Composer\IO\IOInterface;
  */
 final readonly class Renderer
 {
-    private const ANSI_RESET            = "\033[0m";
-    private const ANSI_DIM              = "\033[2m";
+    private const ANSI_RESET = "\033[0m";
+    private const ANSI_DIM = "\033[2m";
     private const ANSI_TRUECOLOR_FG_FMT = "\033[38;2;%d;%d;%dm";
-    private const HEX_PATTERN           = '/^[0-9a-fA-F]{6}$/';
+    private const HEX_PATTERN = '/^[0-9a-fA-F]{6}$/';
 
-    public function __construct(private IOInterface $io) {}
+    public function __construct(private IOInterface $io)
+    {
+    }
 
     /**
-     * @param list<string>      $lines      Banner lines (no trailing newlines).
-     * @param list<string>|null $colors     Hex codes (with or without leading `#`); null = plain.
-     * @param string|null       $statusLine Dim suffix below the banner; null/empty = none.
-     * @param Direction         $direction  Vertical / Horizontal / Diagonal gradient flow.
+     * @param list<string>      $lines      banner lines (no trailing newlines)
+     * @param list<string>|null $colors     hex codes (with or without leading `#`); null = plain
+     * @param string|null       $statusLine dim suffix below the banner; null/empty = none
+     * @param Direction         $direction  vertical / Horizontal / Diagonal gradient flow
      */
     public function render(
         array $lines,
@@ -30,15 +32,15 @@ final readonly class Renderer
         ?string $statusLine,
         Direction $direction = Direction::Vertical,
     ): void {
-        if ($lines === []) {
+        if ([] === $lines) {
             return;
         }
 
         $stops = $this->resolveStops($colors);
-        $useColor = $stops !== null && $this->supportsColor();
+        $useColor = null !== $stops && $this->supportsColor();
 
         $rowCount = count($lines);
-        $maxWidth = $direction === Direction::Diagonal ? $this->maxLineWidth($lines) : 0;
+        $maxWidth = Direction::Diagonal === $direction ? $this->maxLineWidth($lines) : 0;
 
         $this->io->writeRaw('');
         foreach ($lines as $row => $line) {
@@ -47,21 +49,21 @@ final readonly class Renderer
                 continue;
             }
             $this->io->writeRaw(match ($direction) {
-                Direction::Vertical   => $this->colorizeWholeLine($line, $this->sampleGradient($stops, $this->fraction($row, $rowCount))),
+                Direction::Vertical => $this->colorizeWholeLine($line, $this->sampleGradient($stops, $this->fraction($row, $rowCount))),
                 Direction::Horizontal => $this->colorizeHorizontal($line, $stops),
-                Direction::Diagonal   => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops),
+                Direction::Diagonal => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops),
             });
         }
 
-        if ($statusLine !== null && $statusLine !== '') {
-            $this->io->writeRaw($useColor ? self::ANSI_DIM . $statusLine . self::ANSI_RESET : $statusLine);
+        if (null !== $statusLine && '' !== $statusLine) {
+            $this->io->writeRaw($useColor ? self::ANSI_DIM.$statusLine.self::ANSI_RESET : $statusLine);
         }
         $this->io->writeRaw('');
     }
 
     private function supportsColor(): bool
     {
-        if (getenv('NO_COLOR') !== false) {
+        if (false !== getenv('NO_COLOR')) {
             return false;
         }
 
@@ -70,22 +72,23 @@ final readonly class Renderer
 
     /**
      * @param list<string>|null $colors
+     *
      * @return non-empty-list<array{int, int, int}>|null
      */
     private function resolveStops(?array $colors): ?array
     {
-        if ($colors === null || $colors === []) {
+        if (null === $colors || [] === $colors) {
             return null;
         }
         $stops = [];
         foreach ($colors as $hex) {
             $rgb = $this->hexToRgb($hex);
-            if ($rgb !== null) {
+            if (null !== $rgb) {
                 $stops[] = $rgb;
             }
         }
 
-        return $stops === [] ? null : $stops;
+        return [] === $stops ? null : $stops;
     }
 
     /**
@@ -95,7 +98,7 @@ final readonly class Renderer
     {
         [$r, $g, $b] = $rgb;
 
-        return sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b) . $text . self::ANSI_RESET;
+        return sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b).$text.self::ANSI_RESET;
     }
 
     /**
@@ -103,34 +106,34 @@ final readonly class Renderer
      */
     private function colorizeHorizontal(string $text, array $stops): string
     {
-        if ($text === '') {
+        if ('' === $text) {
             return '';
         }
 
         $chars = mb_str_split($text);
         $visibleCount = 0;
         foreach ($chars as $char) {
-            if ($char !== ' ') {
+            if (' ' !== $char) {
                 ++$visibleCount;
             }
         }
-        if ($visibleCount === 0) {
+        if (0 === $visibleCount) {
             return $text;
         }
 
         $output = '';
         $visibleIndex = 0;
         foreach ($chars as $char) {
-            if ($char === ' ') {
+            if (' ' === $char) {
                 $output .= $char;
                 continue;
             }
             [$r, $g, $b] = $this->sampleGradient($stops, $this->fraction($visibleIndex, $visibleCount));
             ++$visibleIndex;
-            $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b) . $char;
+            $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b).$char;
         }
 
-        return $output . self::ANSI_RESET;
+        return $output.self::ANSI_RESET;
     }
 
     /**
@@ -138,23 +141,23 @@ final readonly class Renderer
      */
     private function colorizeDiagonal(string $text, int $row, int $rowCount, int $maxWidth, array $stops): string
     {
-        if ($text === '') {
+        if ('' === $text) {
             return '';
         }
 
         $rowFraction = $rowCount > 1 ? $row / ($rowCount - 1) : 0.0;
         $output = '';
         foreach (mb_str_split($text) as $col => $char) {
-            if ($char === ' ') {
+            if (' ' === $char) {
                 $output .= $char;
                 continue;
             }
             $columnFraction = $maxWidth > 1 ? $col / ($maxWidth - 1) : 0.0;
             [$r, $g, $b] = $this->sampleGradient($stops, ($rowFraction + $columnFraction) / 2);
-            $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b) . $char;
+            $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b).$char;
         }
 
-        return $output . self::ANSI_RESET;
+        return $output.self::ANSI_RESET;
     }
 
     private function fraction(int $index, int $total): float
@@ -164,12 +167,13 @@ final readonly class Renderer
 
     /**
      * @param non-empty-list<array{int, int, int}> $stops
+     *
      * @return array{int, int, int}
      */
     private function sampleGradient(array $stops, float $f): array
     {
         $count = count($stops);
-        if ($count === 1) {
+        if (1 === $count) {
             return $stops[0];
         }
         $f = max(0.0, min(1.0, $f));
@@ -187,6 +191,7 @@ final readonly class Renderer
     /**
      * @param array{int, int, int} $a
      * @param array{int, int, int} $b
+     *
      * @return array{int, int, int}
      */
     private function lerpRgb(array $a, array $b, float $t): array
@@ -220,7 +225,7 @@ final readonly class Renderer
     private function hexToRgb(string $hex): ?array
     {
         $hex = ltrim($hex, '#');
-        if (preg_match(self::HEX_PATTERN, $hex) !== 1) {
+        if (1 !== preg_match(self::HEX_PATTERN, $hex)) {
             return null;
         }
 
