@@ -518,6 +518,25 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function statusLineOmitsComposerNoVersionPlaceholder(): void
+    {
+        $this->writeBanner('x');
+        $this->pinComposerFile();
+
+        $composer = new Composer();
+        $package = new RootPackage('acme/site', '1.0.0.0', '1.0.0+no-version-set');
+        $package->setExtra(['fanfare' => ['template' => 'banner.txt', 'colors' => ['#ff0000']]]);
+        $composer->setPackage($package);
+
+        $io = $this->decoratedIo();
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('acme/site', $output);
+        self::assertStringNotContainsString('no-version-set', $output);
+    }
+
+    #[Test]
     public function statusLineIncludesProjectNameAndVersion(): void
     {
         $this->writeBanner('x');

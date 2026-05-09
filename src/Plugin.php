@@ -24,6 +24,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
     private const MAX_TEMPLATE_BYTES = 16384;
     private const CONTROL_CHARS_RANGE = "\0..\37";
     private const RANDOM_KEYWORD = 'random';
+    private const NO_VERSION_PLACEHOLDER = 'no-version-set';
 
     private Composer $composer;
     private IOInterface $io;
@@ -169,7 +170,8 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         $name = $rootPackage->getName();
         $version = $rootPackage->getPrettyVersion();
         if ('' !== $name) {
-            $parts[] = '' !== $version ? $name.' '.$version : $name;
+            $hasMeaningfulVersion = '' !== $version && !str_contains($version, self::NO_VERSION_PLACEHOLDER);
+            $parts[] = $hasMeaningfulVersion ? $name.' '.$version : $name;
         }
 
         $parts[] = 'PHP '.PHP_VERSION;
