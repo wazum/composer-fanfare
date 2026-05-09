@@ -1,13 +1,20 @@
 {
     "name": "wazum/composer-fanfare",
     "description": "Display a colored ASCII banner after composer install/update.",
-    "type": "composer-plugin",
     "license": "MIT",
-    "keywords": ["composer-plugin", "banner", "ascii", "ansi", "cli", "fanfare"],
+    "type": "composer-plugin",
+    "keywords": [
+        "composer-plugin",
+        "banner",
+        "ascii",
+        "ansi",
+        "cli",
+        "fanfare"
+    ],
     "authors": [
         {
             "name": "Wolfgang Klinger",
-            "email": "wk@plan2.net"
+            "email": "wolfgang@wazum.com"
         }
     ],
     "require": {
@@ -17,9 +24,13 @@
     },
     "require-dev": {
         "composer/composer": "^2.6",
+        "ergebnis/composer-normalize": "^2.45",
+        "friendsofphp/php-cs-fixer": "^3.65",
+        "infection/infection": "^0.29",
         "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^11.0"
     },
+    "minimum-stability": "stable",
     "autoload": {
         "psr-4": {
             "Wazum\\ComposerFanfare\\": "src/"
@@ -30,18 +41,22 @@
             "Wazum\\ComposerFanfare\\Tests\\": "tests/"
         }
     },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "infection/extension-installer": true,
+            "wazum/composer-fanfare": true
+        },
+        "sort-packages": true
+    },
     "extra": {
         "class": "Wazum\\ComposerFanfare\\Plugin"
     },
-    "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "wazum/composer-fanfare": true
-        }
-    },
     "scripts": {
-        "test": "phpunit",
-        "stan": "phpstan analyse --no-progress"
-    },
-    "minimum-stability": "stable"
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
+        "mutation": "infection --threads=4",
+        "stan": "phpstan analyse --no-progress",
+        "test": "phpunit"
+    }
 }

@@ -14,11 +14,6 @@ use Wazum\ComposerFanfare\Renderer;
 
 final class RendererTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        putenv('NO_COLOR');
-    }
-
     #[Test]
     public function emptyLinesProducesNoOutput(): void
     {
@@ -177,7 +172,6 @@ final class RendererTest extends TestCase
         );
 
         $output = $io->getOutput();
-        // 2x2 grid, denominator = (2-1)+(2-1) = 2; lerp(red→blue) at 0, 0.5, 0.5, 1
         self::assertStringContainsString("\033[38;2;255;0;0ma", $output);
         self::assertStringContainsString("\033[38;2;128;0;128mb", $output);
         self::assertStringContainsString("\033[38;2;128;0;128mc", $output);
@@ -277,6 +271,129 @@ final class RendererTest extends TestCase
         (new Renderer($io))->render(['hello'], ['#ff0000'], null);
 
         self::assertStringContainsString("\033[38;2;255;0;0mhello\033[0m", $io->getOutput());
+    }
+
+    #[Test]
+    public function horizontalRowEndsWithReset(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['x'], ['#ff0000'], null, Direction::Horizontal);
+
+        self::assertMatchesRegularExpression(
+            '/\033\[38;2;255;0;0mx\033\[0m\n/',
+            $io->getOutput(),
+        );
+    }
+
+    #[Test]
+    public function diagonalRowEndsWithReset(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['xy', 'zw'], ['#ff0000', '#0000ff'], null, Direction::Diagonal);
+
+        $output = $io->getOutput();
+        self::assertMatchesRegularExpression('/\033\[38;2;128;0;128my\033\[0m\n/', $output);
+        self::assertMatchesRegularExpression('/\033\[38;2;0;0;255mw\033\[0m\n/', $output);
+    }
+
+    #[Test]
+    public function diagonalSingleRowBannerInterpolatesAcrossColumns(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['ab'], ['#ff0000', '#0000ff'], null, Direction::Diagonal);
+
+        $output = $io->getOutput();
+        // Single row → rowFraction = 0; columnFraction at col 0 = 0, col 1 = 1; (0 + f) / 2
+        self::assertStringContainsString("\033[38;2;255;0;0ma", $output);
+        self::assertStringContainsString("\033[38;2;128;0;128mb", $output);
+    }
+
+    #[Test]
+    public function diagonalHandlesMultibyteCharacters(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(
+            ['★ä', '🎉∞'],
+            ['#ff0000', '#0000ff'],
+            null,
+            Direction::Diagonal,
+        );
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[38;2;255;0;0m★", $output);
+        self::assertStringContainsString("\033[38;2;128;0;128mä", $output);
+        self::assertStringContainsString("\033[38;2;128;0;128m🎉", $output);
+        self::assertStringContainsString("\033[38;2;0;0;255m∞", $output);
+    }
+
+    #[Test]
+    public function horizontalLineWithOnlySpacesEmitsPlain(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['   '], ['#ff0000', '#00ff00'], null, Direction::Horizontal);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('   ', $output);
+        // No escapes at all — not even a trailing RESET — when the row has no visible chars
+        self::assertStringNotContainsString("\033[", $output);
+    }
+
+    #[Test]
+    public function diagonalSingleCellBannerUsesFirstStop(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['x'], ['#ff0000', '#0000ff'], null, Direction::Diagonal);
+
+        // 1×1 banner → both rowFraction and columnFraction collapse to 0.0 → first stop
+        self::assertStringContainsString("\033[38;2;255;0;0mx", $io->getOutput());
+    }
+
+    #[Test]
+    public function diagonalThreeRowBannerInterpolatesByRow(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(
+            ['ab', 'cd', 'ef'],
+            ['#ff0000', '#0000ff'],
+            null,
+            Direction::Diagonal,
+        );
+
+        $output = $io->getOutput();
+        // row 1 (rowFraction 0.5):
+        //   col 0: (0.5 + 0) / 2 = 0.25 → lerp(red, blue, 0.25) = (191, 0, 64)
+        //   col 1: (0.5 + 1) / 2 = 0.75 → lerp(red, blue, 0.75) = (64, 0, 191)
+        self::assertStringContainsString("\033[38;2;191;0;64mc", $output);
+        self::assertStringContainsString("\033[38;2;64;0;191md", $output);
+    }
+
+    #[Test]
+    public function multipleUncoloredLinesAreAllRendered(): void
+    {
+        $io = $this->plainIo();
+        (new Renderer($io))->render(['first', 'second', 'third'], ['#ff0000'], null);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('first', $output);
+        self::assertStringContainsString('second', $output);
+        self::assertStringContainsString('third', $output);
+    }
+
+    #[Test]
+    public function bannerHasLeadingAndTrailingBlankLines(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['hello'], ['#ff0000'], null);
+
+        $output = $io->getOutput();
+        // Output structure: \n + colored "hello" + \n + \n  (leading + content + trailing)
+        self::assertStringStartsWith("\n", $output);
+        self::assertStringEndsWith("\n\n", $output);
+    }
+
+    protected function tearDown(): void
+    {
+        putenv('NO_COLOR');
     }
 
     private function decoratedIo(): BufferIO

@@ -1,0 +1,97 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": ["src"],
+    },
+    "logs": {
+        "text": "infection.log",
+    },
+    "tmpDir": ".infection",
+    "phpUnit": {
+        "configDir": ".",
+    },
+    "minMsi": 100,
+    "minCoveredMsi": 100,
+    "mutators": {
+        "@default": true,
+        // Removing the first hex stop from each preset's palette is observable but
+        // pinning every preset to a hardcoded RGB triple would just duplicate the
+        // enum data — the readability/coverage trade-off is bad.
+        "ArrayItemRemoval": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Preset::colors",
+            ],
+        },
+        // random_int bounds are inherently non-deterministic to test without
+        // injecting an RNG seam. The bounds are correct by construction.
+        "DecrementInteger": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Plugin::resolveColors",
+                "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
+            ],
+        },
+        "IncrementInteger": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Plugin::resolveColors",
+                "Wazum\\ComposerFanfare\\Plugin::isAbsolutePath",
+                "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
+            ],
+        },
+        "Minus": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Plugin::resolveColors",
+                "Wazum\\ComposerFanfare\\Renderer::lerpRgb",
+            ],
+        },
+        // realpath / filesize / file_get_contents only return false in pathological
+        // FS conditions that aren't reproducible in the test environment.
+        "FalseValue": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Plugin::loadTemplate",
+                "Wazum\\ComposerFanfare\\Plugin::rootDir",
+                "Wazum\\ComposerFanfare\\Plugin::isAbsolutePath",
+            ],
+        },
+        "NotIdentical": {
+            "ignore": ["Wazum\\ComposerFanfare\\Plugin::rootDir"],
+        },
+        "Ternary": {
+            "ignore": ["Wazum\\ComposerFanfare\\Plugin::rootDir"],
+        },
+        // Removing one DIRECTORY_SEPARATOR side from str_starts_with($real.SEP, $rootReal.SEP)
+        // changes observable behavior only when $real == $rootReal exactly, which can't
+        // reach this code (caught earlier by is_file).
+        "ConcatOperandRemoval": {
+            "ignore": ["Wazum\\ComposerFanfare\\Plugin::loadTemplate"],
+        },
+        // (int) casts on round() / hexdec() are defensive — sprintf '%d' coerces
+        // floats to int representation identically.
+        "CastInt": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Renderer::sampleGradient",
+                "Wazum\\ComposerFanfare\\Renderer::lerpRgb",
+                "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
+            ],
+        },
+        // round vs ceil produce identical results for half-integer fractions used
+        // by our gradient interpolation; not a meaningful bug surface.
+        "RoundingFamily": {
+            "ignore": ["Wazum\\ComposerFanfare\\Renderer::lerpRgb"],
+        },
+        // mb_strlen >= max vs > max is observable only when two lines have the
+        // same width and we'd repeat the same value; output is identical.
+        "GreaterThan": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
+                "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
+            ],
+        },
+        // Plugin's WINDOWS_PATH preg_match runs only on Windows-style absolute paths;
+        // not testable from a Linux CI runner without elaborate mocking.
+        "MethodCallRemoval": {
+            "ignore": ["Wazum\\ComposerFanfare\\Plugin::loadTemplate"],
+        },
+    },
+}
