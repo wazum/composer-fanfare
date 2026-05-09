@@ -65,7 +65,11 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $template = $config['template'] ?? null;
-        if (!is_string($template) || $template === '') {
+        if (!is_string($template)) {
+            return;
+        }
+        $template = trim($template);
+        if ($template === '') {
             return;
         }
 
@@ -92,6 +96,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             return Direction::Vertical;
         }
         if (is_string($value)) {
+            $value = trim($value);
             $direction = Direction::tryFrom($value);
             if ($direction !== null) {
                 return $direction;
@@ -110,7 +115,8 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
     private function resolveColors(mixed $value): ?array
     {
         if (is_string($value)) {
-            if (preg_match(self::HEX_PATTERN,$value) === 1) {
+            $value = trim($value);
+            if (preg_match(self::HEX_PATTERN, $value) === 1) {
                 return [$value];
             }
             if ($value === self::RANDOM_KEYWORD) {
@@ -133,7 +139,11 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         if (is_array($value)) {
             $hex = [];
             foreach ($value as $entry) {
-                if (is_string($entry) && preg_match(self::HEX_PATTERN,$entry) === 1) {
+                if (!is_string($entry)) {
+                    continue;
+                }
+                $entry = trim($entry);
+                if (preg_match(self::HEX_PATTERN, $entry) === 1) {
                     $hex[] = $entry;
                 }
             }

@@ -416,6 +416,49 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('3 packages', $io->getOutput());
     }
 
+    public function testWhitespaceAroundConfigValuesIsTolerated(): void
+    {
+        $this->writeBanner("a\nb\nc");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template'  => '  banner.txt  ',
+                'colors'    => '  fire  ',
+                'direction' => "\thorizontal\n",
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        // fire palette renders without warnings
+        self::assertStringContainsString("\033[38;2;58;0;0m", $output);
+        self::assertStringNotContainsString('Unknown', $output);
+        self::assertStringNotContainsString('not found', $output);
+    }
+
+    public function testWhitespaceInColorsArrayIsTrimmed(): void
+    {
+        $this->writeBanner("a\nb");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors'   => ['  #ff0000  ', "\t#00ff00\n"],
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[38;2;255;0;0ma\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
+    }
+
     public function testRandomColorsPicksAPreset(): void
     {
         $this->writeBanner('x');
