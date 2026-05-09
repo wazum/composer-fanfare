@@ -656,6 +656,99 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function reverseTransformFlipsThePresetOrdering(): void
+    {
+        $this->writeBanner("a\nb\nc");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => 'fire',
+                'transform' => 'reverse',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        // fire = ['#3a0000', '#ff5400', '#ffd700']; reversed → first line gets the last stop.
+        self::assertStringContainsString("\033[38;2;255;215;0ma\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;255;84;0mb\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;58;0;0mc\033[0m", $output);
+    }
+
+    #[Test]
+    public function reverseTransformAppliesToHexArrays(): void
+    {
+        $this->writeBanner("a\nb");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => ['#ff0000', '#00ff00'],
+                'transform' => 'reverse',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        // Reversed: green on first line, red on second.
+        self::assertStringContainsString("\033[38;2;0;255;0ma\033[0m", $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mb\033[0m", $output);
+    }
+
+    #[Test]
+    public function unknownTransformWarnsAndKeepsOriginalOrdering(): void
+    {
+        $this->writeBanner("a\nb\nc");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => 'fire',
+                'transform' => 'pastel',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('Unknown transform "pastel"', $output);
+        self::assertStringContainsString('available: reverse', $output);
+        // Original fire ordering preserved despite the unknown transform.
+        self::assertStringContainsString("\033[38;2;58;0;0ma\033[0m", $output);
+    }
+
+    #[Test]
+    public function whitespaceAroundTransformIsTrimmed(): void
+    {
+        $this->writeBanner("a\nb");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => ['#ff0000', '#00ff00'],
+                'transform' => '  reverse  ',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[38;2;0;255;0ma\033[0m", $output);
+        self::assertStringNotContainsString('Unknown', $output);
+    }
+
+    #[Test]
     public function randomColorsPicksAPreset(): void
     {
         $this->writeBanner('x');

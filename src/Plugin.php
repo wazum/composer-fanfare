@@ -89,10 +89,36 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         }
         $lines = explode("\n", $normalized);
         $colors = $this->resolveColors($config['colors'] ?? null);
+        $colors = $this->applyTransform($colors, $config['transform'] ?? null);
         $direction = $this->resolveDirection($config['direction'] ?? null);
         $statusLine = ($config['footer'] ?? true) === false ? null : $this->buildStatusLine();
 
         (new Renderer($this->io))->render($lines, $colors, $statusLine, $direction);
+    }
+
+    /**
+     * @param list<string>|null $colors
+     *
+     * @return list<string>|null
+     */
+    private function applyTransform(?array $colors, mixed $value): ?array
+    {
+        if (null === $colors || !is_string($value)) {
+            return $colors;
+        }
+        $name = trim($value);
+        if ('' === $name) {
+            return $colors;
+        }
+        if ('reverse' === $name) {
+            return array_reverse($colors);
+        }
+        $this->io->writeError(sprintf(
+            '<warning>Unknown transform "%s" • available: reverse</warning>',
+            $name,
+        ));
+
+        return $colors;
     }
 
     private function resolveDirection(mixed $value): Direction
