@@ -45,6 +45,7 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
   - a hex string (`"#ff6ec7"`)
   - an array of hex stops (`["#ff6ec7", "#7873f5"]`) — colors interpolate smoothly between stops
   - a preset name: `aurora`, `catppuccin`, `doom`, `dracula`, `fire`, `gruvbox`, `iceberg`, `matrix`, `monokai`, `nord`, `ocean`, `pride`, `solarized`, `sunset`, `synthwave`
+  - `"random"` — picks a random preset on each install/update
   - omit for plain output
 - `direction` — controls how the gradient flows:
   - `"vertical"` (default) — one color per line, top to bottom

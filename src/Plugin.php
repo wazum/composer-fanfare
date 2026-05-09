@@ -23,6 +23,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
     private const STREAM_WRAPPER      = '#^[a-z][a-z0-9+.\-]*://#i';
     private const MAX_TEMPLATE_BYTES  = 16384;
     private const CONTROL_CHARS_RANGE = "\0..\37";
+    private const RANDOM_KEYWORD      = 'random';
 
     private Composer $composer;
     private IOInterface $io;
@@ -112,12 +113,17 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             if (preg_match(self::HEX_PATTERN,$value) === 1) {
                 return [$value];
             }
+            if ($value === self::RANDOM_KEYWORD) {
+                $cases = Preset::cases();
+                return $cases[random_int(0, count($cases) - 1)]->colors();
+            }
             $preset = Preset::tryFrom($value);
             if ($preset === null) {
                 $this->io->writeError(sprintf(
-                    '<warning>Unknown preset "%s" • available: %s</warning>',
+                    '<warning>Unknown preset "%s" • available: %s, %s</warning>',
                     $value,
                     implode(', ', Preset::names()),
+                    self::RANDOM_KEYWORD,
                 ));
                 return null;
             }

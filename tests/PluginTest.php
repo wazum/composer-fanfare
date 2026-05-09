@@ -416,6 +416,23 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('3 packages', $io->getOutput());
     }
 
+    public function testRandomColorsPicksAPreset(): void
+    {
+        $this->writeBanner('x');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => 'random'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('x', $output);
+        self::assertMatchesRegularExpression('/\033\[38;2;\d+;\d+;\d+m/', $output);
+    }
+
     public function testInvalidHexInArrayIsSkipped(): void
     {
         $this->writeBanner("a\nb");
