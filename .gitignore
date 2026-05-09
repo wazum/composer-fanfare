@@ -1,11 +1,26 @@
+# Composer / PHP
 /vendor/
 /composer.lock
-/demo/
 /.phpunit.cache/
 /.phpunit.result.cache
 /coverage/
+
+# Tooling
 /.ddev/
 /docs/
+/demo/
 /CLAUDE.md
 /.claude/
+
+# IDEs and editors
+/.idea/
+/.vscode/
+/.fleet/
+/.zed/
+*.swp
+*.swo
+
+# OS metadata
 .DS_Store
+._*
+Thumbs.db
