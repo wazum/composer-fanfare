@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wazum\ComposerFanfare\Tests;
 
 use Composer\IO\BufferIO;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -18,7 +19,8 @@ final class RendererTest extends TestCase
         putenv('NO_COLOR');
     }
 
-    public function testEmptyLinesProducesNoOutput(): void
+    #[Test]
+    public function emptyLinesProducesNoOutput(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render([], ['#ff0000'], 'PHP 8.2.30');
@@ -26,7 +28,8 @@ final class RendererTest extends TestCase
         self::assertSame('', $io->getOutput());
     }
 
-    public function testPlainOutputWhenColorsIsNull(): void
+    #[Test]
+    public function plainOutputWhenColorsIsNull(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['hello'], null, null);
@@ -36,7 +39,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[", $output);
     }
 
-    public function testSingleHexColor(): void
+    #[Test]
+    public function singleHexColor(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['line1', 'line2'], ['#ff0000'], null);
@@ -46,7 +50,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;0;0mline2\033[0m", $output);
     }
 
-    public function testHexWithoutLeadingHash(): void
+    #[Test]
+    public function hexWithoutLeadingHash(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['x'], ['00ff00'], null);
@@ -54,7 +59,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0mx\033[0m", $io->getOutput());
     }
 
-    public function testInvalidHexFallsThroughUncolored(): void
+    #[Test]
+    public function invalidHexFallsThroughUncolored(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['x'], ['notahex'], null);
@@ -64,7 +70,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[38;", $output);
     }
 
-    public function testVerticalInterpolatesAcrossLines(): void
+    #[Test]
+    public function verticalInterpolatesAcrossLines(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -80,7 +87,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0md\033[0m", $output);
     }
 
-    public function testNoColorEnvDisablesColor(): void
+    #[Test]
+    public function noColorEnvDisablesColor(): void
     {
         putenv('NO_COLOR=1');
         $io = $this->decoratedIo();
@@ -91,7 +99,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[", $output);
     }
 
-    public function testNonDecoratedIoDisablesColor(): void
+    #[Test]
+    public function nonDecoratedIoDisablesColor(): void
     {
         $io = $this->plainIo();
         (new Renderer($io))->render(['hello'], ['#ff0000'], null);
@@ -101,7 +110,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[", $output);
     }
 
-    public function testStatusLineDimWhenColored(): void
+    #[Test]
+    public function statusLineDimWhenColored(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['x'], ['#ff0000'], 'PHP 8.2.30 · 12 packages');
@@ -109,7 +119,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[2mPHP 8.2.30 · 12 packages\033[0m", $io->getOutput());
     }
 
-    public function testStatusLinePlainWhenNotColored(): void
+    #[Test]
+    public function statusLinePlainWhenNotColored(): void
     {
         $io = $this->plainIo();
         (new Renderer($io))->render(['x'], null, 'PHP 8.2.30');
@@ -119,7 +130,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[", $output);
     }
 
-    public function testStatusLineOmittedWhenNull(): void
+    #[Test]
+    public function statusLineOmittedWhenNull(): void
     {
         $io = $this->plainIo();
         (new Renderer($io))->render(['x'], null, null);
@@ -127,7 +139,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString('PHP', $io->getOutput());
     }
 
-    public function testEmptyColorsArrayTreatedAsPlain(): void
+    #[Test]
+    public function emptyColorsArrayTreatedAsPlain(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['hello'], [], null);
@@ -135,7 +148,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[", $io->getOutput());
     }
 
-    public function testHorizontalInterpolatesAcrossCharacters(): void
+    #[Test]
+    public function horizontalInterpolatesAcrossCharacters(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -151,7 +165,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0mc", $output);
     }
 
-    public function testDiagonalFlowsTopLeftToBottomRight(): void
+    #[Test]
+    public function diagonalFlowsTopLeftToBottomRight(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -169,7 +184,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;0;255md", $output);
     }
 
-    public function testDiagonalLeavesSpacesUncolored(): void
+    #[Test]
+    public function diagonalLeavesSpacesUncolored(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -188,7 +204,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[38;2;255;0;0m ", $output);
     }
 
-    public function testHorizontalSkipsSpacesForGradientStepping(): void
+    #[Test]
+    public function horizontalSkipsSpacesForGradientStepping(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -205,7 +222,8 @@ final class RendererTest extends TestCase
         self::assertStringNotContainsString("\033[38;2;255;0;0m ", $output);
     }
 
-    public function testHorizontalLeavesLeadingSpacesUncolored(): void
+    #[Test]
+    public function horizontalLeavesLeadingSpacesUncolored(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -220,7 +238,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0mb", $output);
     }
 
-    public function testHorizontalHandlesMultibyteCharacters(): void
+    #[Test]
+    public function horizontalHandlesMultibyteCharacters(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -236,7 +255,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;0;255mä", $output);
     }
 
-    public function testHorizontalSkipsEmptyLineWithoutEscapes(): void
+    #[Test]
+    public function horizontalSkipsEmptyLineWithoutEscapes(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(
@@ -250,7 +270,8 @@ final class RendererTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;0;0mx", $output);
     }
 
-    public function testVerticalIsDefaultAndWrapsWholeLine(): void
+    #[Test]
+    public function verticalIsDefaultAndWrapsWholeLine(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['hello'], ['#ff0000'], null);

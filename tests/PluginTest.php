@@ -11,6 +11,7 @@ use Composer\Package\RootPackage;
 use Composer\Repository\LockArrayRepository;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\StreamOutput;
@@ -37,7 +38,8 @@ final class PluginTest extends TestCase
         putenv('COMPOSER');
     }
 
-    public function testGetSubscribedEventsReturnsBothScriptEvents(): void
+    #[Test]
+    public function getSubscribedEventsReturnsBothScriptEvents(): void
     {
         self::assertSame(
             [
@@ -48,7 +50,8 @@ final class PluginTest extends TestCase
         );
     }
 
-    public function testAbsentFanfareConfigProducesNoOutput(): void
+    #[Test]
+    public function absentFanfareConfigProducesNoOutput(): void
     {
         $io = $this->decoratedIo();
         $composer = $this->makeComposer([]);
@@ -58,7 +61,8 @@ final class PluginTest extends TestCase
         self::assertSame('', $io->getOutput());
     }
 
-    public function testMissingTemplateEmitsWarning(): void
+    #[Test]
+    public function missingTemplateEmitsWarning(): void
     {
         $io = $this->decoratedIo();
         $composer = $this->makeComposer([
@@ -71,7 +75,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('Template "no/such/file.txt" not found', $output);
     }
 
-    public function testKnownPresetExpandsToPalette(): void
+    #[Test]
+    public function knownPresetExpandsToPalette(): void
     {
         $this->writeBanner("a\nb\nc");
         $this->pinComposerFile();
@@ -90,7 +95,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;117;7;135mc\033[0m", $output);
     }
 
-    public function testUnknownPresetWarnsAndRendersPlain(): void
+    #[Test]
+    public function unknownPresetWarnsAndRendersPlain(): void
     {
         $this->writeBanner('hello');
         $this->pinComposerFile();
@@ -109,7 +115,8 @@ final class PluginTest extends TestCase
         self::assertStringNotContainsString("\033[38;", $output);
     }
 
-    public function testTemplateResolvedRelativeToRootComposerFile(): void
+    #[Test]
+    public function templateResolvedRelativeToRootComposerFile(): void
     {
         $this->writeBanner('hi');
         $this->pinComposerFile();
@@ -124,7 +131,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('hi', $io->getOutput());
     }
 
-    public function testHorizontalDirectionAppliesPerCharacterColors(): void
+    #[Test]
+    public function horizontalDirectionAppliesPerCharacterColors(): void
     {
         $this->writeBanner('ab');
         $this->pinComposerFile();
@@ -145,7 +153,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0mb", $output);
     }
 
-    public function testUnknownDirectionWarnsAndDefaultsToVertical(): void
+    #[Test]
+    public function unknownDirectionWarnsAndDefaultsToVertical(): void
     {
         $this->writeBanner('ab');
         $this->pinComposerFile();
@@ -167,7 +176,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;0;0mab\033[0m", $output);
     }
 
-    public function testFirePresetExpandsToGradient(): void
+    #[Test]
+    public function firePresetExpandsToGradient(): void
     {
         $this->writeBanner("a\nb\nc");
         $this->pinComposerFile();
@@ -186,7 +196,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;215;0mc\033[0m", $output);
     }
 
-    public function testDraculaPresetExpandsToGradient(): void
+    #[Test]
+    public function draculaPresetExpandsToGradient(): void
     {
         $this->writeBanner("x\ny\nz");
         $this->pinComposerFile();
@@ -205,7 +216,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;139;233;253mz\033[0m", $output);
     }
 
-    public function testDiagonalDirectionAppliesToBanner(): void
+    #[Test]
+    public function diagonalDirectionAppliesToBanner(): void
     {
         $this->writeBanner("ab\ncd");
         $this->pinComposerFile();
@@ -228,7 +240,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;0;255md", $output);
     }
 
-    public function testCrlfTemplateIsNormalizedToLf(): void
+    #[Test]
+    public function crlfTemplateIsNormalizedToLf(): void
     {
         file_put_contents($this->fixtureDir . '/banner.txt', "line one\r\nline two\r\n");
         $this->pinComposerFile();
@@ -246,7 +259,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;0;0mline two\033[0m", $output);
     }
 
-    public function testStreamWrapperTemplateIsRejected(): void
+    #[Test]
+    public function streamWrapperTemplateIsRejected(): void
     {
         $this->pinComposerFile();
 
@@ -260,7 +274,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('Template "php://stdin" outside project root', $io->getOutput());
     }
 
-    public function testTemplateEscapingRootDirectoryIsRejected(): void
+    #[Test]
+    public function templateEscapingRootDirectoryIsRejected(): void
     {
         $this->pinComposerFile();
 
@@ -274,7 +289,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('Template "/etc/passwd" outside project root', $io->getOutput());
     }
 
-    public function testOversizedTemplateIsRejected(): void
+    #[Test]
+    public function oversizedTemplateIsRejected(): void
     {
         file_put_contents($this->fixtureDir . '/banner.txt', str_repeat('x', 20000));
         $this->pinComposerFile();
@@ -291,7 +307,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('too large', $output);
     }
 
-    public function testControlCharactersInTemplateNameAreEscapedInWarning(): void
+    #[Test]
+    public function controlCharactersInTemplateNameAreEscapedInWarning(): void
     {
         $this->pinComposerFile();
 
@@ -307,7 +324,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('\\033', $output);
     }
 
-    public function testTrailingBlankLinesInTemplateArePreserved(): void
+    #[Test]
+    public function trailingBlankLinesInTemplateArePreserved(): void
     {
         // Three trailing newlines: one terminator + two intentional blank rows.
         file_put_contents($this->fixtureDir . '/banner.txt', "hello\n\n\n");
@@ -330,7 +348,8 @@ final class PluginTest extends TestCase
         self::assertSame(3, substr_count($betweenSection, "\n"));
     }
 
-    public function testFooterCanBeHiddenViaConfig(): void
+    #[Test]
+    public function footerCanBeHiddenViaConfig(): void
     {
         $this->writeBanner('x');
         $this->pinComposerFile();
@@ -352,7 +371,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;0;0mx\033[0m", $output);
     }
 
-    public function testFooterShownByDefault(): void
+    #[Test]
+    public function footerShownByDefault(): void
     {
         $this->writeBanner('x');
         $this->pinComposerFile();
@@ -367,7 +387,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('PHP ' . PHP_VERSION, $io->getOutput());
     }
 
-    public function testStatusLineIncludesProjectNameAndVersion(): void
+    #[Test]
+    public function statusLineIncludesProjectNameAndVersion(): void
     {
         $this->writeBanner('x');
         $this->pinComposerFile();
@@ -382,7 +403,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('wazum/fanfare-test 1.0.0', $io->getOutput());
     }
 
-    public function testStatusLineUsesSingularForOnePackage(): void
+    #[Test]
+    public function statusLineUsesSingularForOnePackage(): void
     {
         $this->writeBanner('x');
         $this->pinComposerFile();
@@ -400,7 +422,8 @@ final class PluginTest extends TestCase
         self::assertStringNotContainsString('1 packages', $output);
     }
 
-    public function testStatusLineUsesPluralForMultiplePackages(): void
+    #[Test]
+    public function statusLineUsesPluralForMultiplePackages(): void
     {
         $this->writeBanner('x');
         $this->pinComposerFile();
@@ -416,7 +439,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('3 packages', $io->getOutput());
     }
 
-    public function testWhitespaceAroundConfigValuesIsTolerated(): void
+    #[Test]
+    public function whitespaceAroundConfigValuesIsTolerated(): void
     {
         $this->writeBanner("a\nb\nc");
         $this->pinComposerFile();
@@ -439,7 +463,8 @@ final class PluginTest extends TestCase
         self::assertStringNotContainsString('not found', $output);
     }
 
-    public function testWhitespaceInColorsArrayIsTrimmed(): void
+    #[Test]
+    public function whitespaceInColorsArrayIsTrimmed(): void
     {
         $this->writeBanner("a\nb");
         $this->pinComposerFile();
@@ -459,7 +484,8 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
     }
 
-    public function testRandomColorsPicksAPreset(): void
+    #[Test]
+    public function randomColorsPicksAPreset(): void
     {
         $this->writeBanner('x');
         $this->pinComposerFile();
@@ -476,7 +502,8 @@ final class PluginTest extends TestCase
         self::assertMatchesRegularExpression('/\033\[38;2;\d+;\d+;\d+m/', $output);
     }
 
-    public function testInvalidHexInArrayIsSkipped(): void
+    #[Test]
+    public function invalidHexInArrayIsSkipped(): void
     {
         $this->writeBanner("a\nb");
         $this->pinComposerFile();

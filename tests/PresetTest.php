@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Wazum\ComposerFanfare\Tests;
 
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Wazum\ComposerFanfare\Preset;
 
 final class PresetTest extends TestCase
 {
-    public function testEveryPresetReturnsValidHexPalette(): void
+    #[Test]
+    public function everyPresetReturnsValidHexPalette(): void
     {
         foreach (Preset::cases() as $preset) {
             $palette = $preset->colors();
@@ -20,7 +22,8 @@ final class PresetTest extends TestCase
         }
     }
 
-    public function testNamesReturnsAllCaseValues(): void
+    #[Test]
+    public function namesReturnsAllCaseValues(): void
     {
         self::assertSame(
             ['aurora', 'catppuccin', 'doom', 'dracula', 'fire', 'gruvbox', 'iceberg', 'matrix', 'monokai', 'nord', 'ocean', 'pride', 'solarized', 'sunset', 'synthwave'],
