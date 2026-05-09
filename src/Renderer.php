@@ -123,14 +123,20 @@ final readonly class Renderer
 
         $output = '';
         $visibleIndex = 0;
+        $previousRgb = null;
         foreach ($chars as $char) {
             if (' ' === $char) {
                 $output .= $char;
                 continue;
             }
-            [$r, $g, $b] = $this->sampleGradient($stops, $this->fraction($visibleIndex, $visibleCount));
+            $rgb = $this->sampleGradient($stops, $this->fraction($visibleIndex, $visibleCount));
             ++$visibleIndex;
-            $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b).$char;
+            if ($rgb !== $previousRgb) {
+                [$r, $g, $b] = $rgb;
+                $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b);
+                $previousRgb = $rgb;
+            }
+            $output .= $char;
         }
 
         return $output.self::ANSI_RESET;
@@ -147,14 +153,20 @@ final readonly class Renderer
 
         $rowFraction = $rowCount > 1 ? $row / ($rowCount - 1) : 0.0;
         $output = '';
+        $previousRgb = null;
         foreach (mb_str_split($text) as $col => $char) {
             if (' ' === $char) {
                 $output .= $char;
                 continue;
             }
             $columnFraction = $maxWidth > 1 ? $col / ($maxWidth - 1) : 0.0;
-            [$r, $g, $b] = $this->sampleGradient($stops, ($rowFraction + $columnFraction) / 2);
-            $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b).$char;
+            $rgb = $this->sampleGradient($stops, ($rowFraction + $columnFraction) / 2);
+            if ($rgb !== $previousRgb) {
+                [$r, $g, $b] = $rgb;
+                $output .= sprintf(self::ANSI_TRUECOLOR_FG_FMT, $r, $g, $b);
+                $previousRgb = $rgb;
+            }
+            $output .= $char;
         }
 
         return $output.self::ANSI_RESET;

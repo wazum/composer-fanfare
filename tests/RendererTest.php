@@ -349,6 +349,50 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
+    public function horizontalCollapsesRepeatedColorEscapes(): void
+    {
+        $io = $this->decoratedIo();
+        // Single-stop gradient → every visible char gets the same RGB.
+        (new Renderer($io))->render(['abc'], ['#ff0000'], null, Direction::Horizontal);
+
+        $output = $io->getOutput();
+        self::assertSame(
+            1,
+            substr_count($output, "\033[38;2;255;0;0m"),
+            'Repeated identical RGB should emit a single foreground escape, not one per character.',
+        );
+    }
+
+    #[Test]
+    public function diagonalCollapsesRepeatedColorEscapes(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['abc'], ['#ff0000'], null, Direction::Diagonal);
+
+        $output = $io->getOutput();
+        self::assertSame(
+            1,
+            substr_count($output, "\033[38;2;255;0;0m"),
+            'Diagonal mode should also collapse repeated identical RGB into a single escape.',
+        );
+    }
+
+    #[Test]
+    public function horizontalDoesNotReEmitEscapeAcrossSpaces(): void
+    {
+        $io = $this->decoratedIo();
+        // 'a a' with single stop → both visible chars are the same color across a space gap.
+        (new Renderer($io))->render(['a a'], ['#ff0000'], null, Direction::Horizontal);
+
+        $output = $io->getOutput();
+        self::assertSame(
+            1,
+            substr_count($output, "\033[38;2;255;0;0m"),
+            'Spaces between same-colored chars should not trigger a redundant re-emit of the escape.',
+        );
+    }
+
+    #[Test]
     public function diagonalThreeRowBannerInterpolatesByRow(): void
     {
         $io = $this->decoratedIo();
