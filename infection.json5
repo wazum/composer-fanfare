@@ -2,6 +2,14 @@
     "$schema": "vendor/infection/infection/resources/schema.json",
     "source": {
         "directories": ["src"],
+        // Preview wiring is presentation-layer plumbing — the rendering itself
+        // is exercised end-to-end in PreviewRendererTest, but mutation testing
+        // adds no value over the integration coverage.
+        "excludes": [
+            "PreviewRenderer.php",
+            "PreviewCommand.php",
+            "CommandProvider.php",
+        ],
     },
     "logs": {
         "text": "infection.log",
@@ -39,7 +47,7 @@
         "IncrementInteger": {
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
-                "Wazum\\ComposerFanfare\\Plugin::isAbsolutePath",
+                "Wazum\\ComposerFanfare\\TemplateLoader::isAbsolutePath",
                 "Wazum\\ComposerFanfare\\Renderer::render",
                 "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
             ],
@@ -54,22 +62,22 @@
         // FS conditions that aren't reproducible in the test environment.
         "FalseValue": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Plugin::loadTemplate",
-                "Wazum\\ComposerFanfare\\Plugin::rootDir",
-                "Wazum\\ComposerFanfare\\Plugin::isAbsolutePath",
+                "Wazum\\ComposerFanfare\\TemplateLoader::loadContents",
+                "Wazum\\ComposerFanfare\\TemplateLoader::rootDir",
+                "Wazum\\ComposerFanfare\\TemplateLoader::isAbsolutePath",
             ],
         },
         "NotIdentical": {
-            "ignore": ["Wazum\\ComposerFanfare\\Plugin::rootDir"],
+            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::rootDir"],
         },
         "Ternary": {
-            "ignore": ["Wazum\\ComposerFanfare\\Plugin::rootDir"],
+            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::rootDir"],
         },
         // Removing one DIRECTORY_SEPARATOR side from str_starts_with($real.SEP, $rootReal.SEP)
         // changes observable behavior only when $real == $rootReal exactly, which can't
         // reach this code (caught earlier by is_file).
         "ConcatOperandRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\Plugin::loadTemplate"],
+            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
         },
         // (int) casts on round() / hexdec() are defensive — sprintf '%d' coerces
         // floats to int representation identically.
@@ -97,7 +105,7 @@
         // Plugin's WINDOWS_PATH preg_match runs only on Windows-style absolute paths;
         // not testable from a Linux CI runner without elaborate mocking.
         "MethodCallRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\Plugin::loadTemplate"],
+            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
         },
     },
 }

@@ -98,6 +98,19 @@ Truecolor escapes are emitted by default. The renderer downgrades automatically 
   </tr>
 </table>
 
+## Preview
+
+Pick a preset without running an install:
+
+```bash
+composer fanfare:preview --gallery                                           # render every preset
+composer fanfare:preview --preset=fire                                       # render just one
+composer fanfare:preview --preset                                            # list preset names
+composer fanfare:preview --gallery --direction=diagonal --transform=reverse  # combine
+```
+
+`--direction` and `--transform` accept the same values as the matching `extra.fanfare` keys. The preview uses your project's configured `extra.fanfare.template` if there is one, otherwise it falls back to a small built-in banner.
+
 ## Creating a template
 
 The template is any plain-text file. For large ASCII letters from a word, the classic tool is [figlet](http://www.figlet.org/):

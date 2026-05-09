@@ -6,8 +6,9 @@ namespace Wazum\ComposerFanfare;
 
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
-use Composer\Factory;
 use Composer\IO\IOInterface;
+use Composer\Plugin\Capability\CommandProvider as ComposerCommandProvider;
+use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
@@ -15,14 +16,10 @@ use Composer\Script\ScriptEvents;
 /**
  * @internal
  */
-final class Plugin implements PluginInterface, EventSubscriberInterface
+final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
 {
     private const CONFIG_KEY = 'fanfare';
     private const HEX_PATTERN = '/^#?[0-9a-fA-F]{6}$/';
-    private const WINDOWS_PATH = '#^[A-Za-z]:[\\\\/]#';
-    private const STREAM_WRAPPER = '#^[a-z][a-z0-9+.\-]*://#i';
-    private const MAX_TEMPLATE_BYTES = 16384;
-    private const CONTROL_CHARS_RANGE = "\0..\37";
     private const RANDOM_KEYWORD = 'random';
     private const NO_VERSION_PLACEHOLDER = 'no-version-set';
 
@@ -52,6 +49,14 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         ];
     }
 
+    /** @return array<class-string, class-string> */
+    public function getCapabilities(): array
+    {
+        return [
+            ComposerCommandProvider::class => CommandProvider::class,
+        ];
+    }
+
     public function onPostCmd(Event $event): void
     {
         try {
@@ -78,16 +83,11 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $contents = $this->loadTemplate($template);
-        if (null === $contents) {
+        $lines = (new TemplateLoader($this->io))->loadLines($template);
+        if (null === $lines) {
             return;
         }
 
-        $normalized = str_replace(["\r\n", "\r"], "\n", $contents);
-        if (str_ends_with($normalized, "\n")) {
-            $normalized = substr($normalized, 0, -1);
-        }
-        $lines = explode("\n", $normalized);
         $colors = $this->resolveColors($config['colors'] ?? null);
         $colors = $this->applyTransform($colors, $config['transform'] ?? null);
         $direction = $this->resolveDirection($config['direction'] ?? null);
@@ -213,88 +213,5 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         return implode(' · ', $parts);
-    }
-
-    private function loadTemplate(string $template): ?string
-    {
-        if (1 === preg_match(self::STREAM_WRAPPER, $template)) {
-            $this->warnTemplate($template, 'outside project root');
-
-            return null;
-        }
-
-        $rootReal = realpath($this->rootDir());
-        if (false === $rootReal) {
-            $this->warnTemplate($template, 'not found');
-
-            return null;
-        }
-
-        $candidate = $this->isAbsolutePath($template)
-            ? $template
-            : $rootReal.DIRECTORY_SEPARATOR.$template;
-        $real = realpath($candidate);
-        if (false === $real) {
-            $this->warnTemplate($template, 'not found');
-
-            return null;
-        }
-
-        if (!str_starts_with($real.DIRECTORY_SEPARATOR, $rootReal.DIRECTORY_SEPARATOR)) {
-            $this->warnTemplate($template, 'outside project root');
-
-            return null;
-        }
-
-        if (!is_file($real) || !is_readable($real)) {
-            $this->warnTemplate($template, 'not found');
-
-            return null;
-        }
-
-        $size = filesize($real);
-        if (false === $size || $size > self::MAX_TEMPLATE_BYTES) {
-            $this->warnTemplate($template, 'too large');
-
-            return null;
-        }
-
-        $contents = @file_get_contents($real);
-        if (false === $contents) {
-            $this->warnTemplate($template, 'could not be read');
-
-            return null;
-        }
-
-        return $contents;
-    }
-
-    private function warnTemplate(string $template, string $reason): void
-    {
-        $this->io->writeError(sprintf(
-            '<warning>Template "%s" %s</warning>',
-            addcslashes($template, self::CONTROL_CHARS_RANGE),
-            $reason,
-        ));
-    }
-
-    private function rootDir(): string
-    {
-        $composerFile = Factory::getComposerFile();
-        $absolute = realpath($composerFile);
-
-        return false !== $absolute ? dirname($absolute) : dirname($composerFile);
-    }
-
-    private function isAbsolutePath(string $path): bool
-    {
-        if ('' === $path) {
-            return false;
-        }
-        if ('/' === $path[0]) {
-            return true;
-        }
-
-        return 1 === preg_match(self::WINDOWS_PATH, $path);
     }
 }

@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\StreamOutput;
+use Wazum\ComposerFanfare\CommandProvider;
 use Wazum\ComposerFanfare\Plugin;
 use Wazum\ComposerFanfare\Preset;
 
@@ -31,6 +32,15 @@ final class PluginTest extends TestCase
                 ScriptEvents::POST_UPDATE_CMD => 'onPostCmd',
             ],
             Plugin::getSubscribedEvents(),
+        );
+    }
+
+    #[Test]
+    public function getCapabilitiesAdvertisesCommandProvider(): void
+    {
+        self::assertSame(
+            [\Composer\Plugin\Capability\CommandProvider::class => CommandProvider::class],
+            (new Plugin())->getCapabilities(),
         );
     }
 
