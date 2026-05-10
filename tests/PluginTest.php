@@ -136,7 +136,7 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
-    public function unknownPresetWarnsAndRendersPlain(): void
+    public function unknownPresetWarns(): void
     {
         $this->writeBanner('hello');
         $this->pinComposerFile();
@@ -151,6 +151,22 @@ final class PluginTest extends TestCase
         $output = $io->getOutput();
         self::assertStringContainsString('Unknown preset "neon"', $output);
         self::assertStringContainsString('available: aurora, catppuccin, doom, dracula, fire, gruvbox, iceberg, matrix, monokai, nord, ocean, pride, solarized, sunset, synthwave', $output);
+    }
+
+    #[Test]
+    public function unknownPresetRendersPlain(): void
+    {
+        $this->writeBanner('hello');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => 'neon'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
         self::assertStringContainsString('hello', $output);
         self::assertStringNotContainsString("\033[38;", $output);
     }
@@ -210,7 +226,7 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
-    public function unknownDirectionWarnsAndDefaultsToVertical(): void
+    public function unknownDirectionWarns(): void
     {
         $this->writeBanner('ab');
         $this->pinComposerFile();
@@ -229,7 +245,27 @@ final class PluginTest extends TestCase
         $output = $io->getOutput();
         self::assertStringContainsString('Unknown direction "spiral"', $output);
         self::assertStringContainsString('available: vertical, horizontal, diagonal', $output);
-        self::assertStringContainsString("\033[38;2;255;0;0mab\033[0m", $output);
+    }
+
+    #[Test]
+    public function unknownDirectionDefaultsToVertical(): void
+    {
+        $this->writeBanner('ab');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => ['#ff0000'],
+                'direction' => 'spiral',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        // Vertical wraps the whole line in a single color escape.
+        self::assertStringContainsString("\033[38;2;255;0;0mab\033[0m", $io->getOutput());
     }
 
     #[Test]
@@ -659,10 +695,31 @@ final class PluginTest extends TestCase
 
         $this->runPlugin($composer, $io);
 
+        // Only the valid #00ff00 hex is kept; non-strings are dropped.
         $output = $io->getOutput();
-        // Only the valid #00ff00 hex is kept; non-strings are silently skipped
         self::assertStringContainsString("\033[38;2;0;255;0ma\033[0m", $output);
         self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
+    }
+
+    #[Test]
+    public function nonStringEntryInColorsArrayWarns(): void
+    {
+        $this->writeBanner('x');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => [42, '#00ff00'],
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('Invalid hex color int', $output);
+        self::assertStringContainsString('expected #RRGGBB', $output);
     }
 
     #[Test]
@@ -713,7 +770,7 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
-    public function unknownTransformWarnsAndKeepsOriginalOrdering(): void
+    public function unknownTransformWarns(): void
     {
         $this->writeBanner("a\nb\nc");
         $this->pinComposerFile();
@@ -732,8 +789,27 @@ final class PluginTest extends TestCase
         $output = $io->getOutput();
         self::assertStringContainsString('Unknown transform "pastel"', $output);
         self::assertStringContainsString('available: reverse', $output);
-        // Original fire ordering preserved despite the unknown transform.
-        self::assertStringContainsString("\033[38;2;58;0;0ma\033[0m", $output);
+    }
+
+    #[Test]
+    public function unknownTransformKeepsOriginalOrdering(): void
+    {
+        $this->writeBanner("a\nb\nc");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => 'fire',
+                'transform' => 'pastel',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        // fire's first stop on line 1 — preserved despite the unknown transform.
+        self::assertStringContainsString("\033[38;2;58;0;0ma\033[0m", $io->getOutput());
     }
 
     #[Test]
@@ -795,6 +871,27 @@ final class PluginTest extends TestCase
         $output = $io->getOutput();
         self::assertStringContainsString("\033[38;2;0;255;0ma\033[0m", $output);
         self::assertStringContainsString("\033[38;2;0;255;0mb\033[0m", $output);
+    }
+
+    #[Test]
+    public function invalidHexInArrayWarns(): void
+    {
+        $this->writeBanner('x');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => ['notahex', '#00ff00'],
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('Invalid hex color "notahex"', $output);
+        self::assertStringContainsString('expected #RRGGBB', $output);
     }
 
     protected function setUp(): void

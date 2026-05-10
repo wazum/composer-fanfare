@@ -265,7 +265,7 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
-    public function verticalIsDefaultAndWrapsWholeLine(): void
+    public function defaultDirectionWrapsWholeLine(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['hello'], ['#ff0000'], null);
@@ -461,15 +461,21 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
-    public function bannerHasLeadingAndTrailingBlankLines(): void
+    public function bannerHasLeadingBlankLine(): void
     {
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['hello'], ['#ff0000'], null);
 
-        $output = $io->getOutput();
-        // Output structure: \n + colored "hello" + \n + \n  (leading + content + trailing)
-        self::assertStringStartsWith("\n", $output);
-        self::assertStringEndsWith("\n\n", $output);
+        self::assertStringStartsWith("\n", $io->getOutput());
+    }
+
+    #[Test]
+    public function bannerHasTrailingBlankLine(): void
+    {
+        $io = $this->decoratedIo();
+        (new Renderer($io))->render(['hello'], ['#ff0000'], null);
+
+        self::assertStringEndsWith("\n\n", $io->getOutput());
     }
 
     protected function tearDown(): void

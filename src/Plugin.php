@@ -173,13 +173,20 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         if (is_array($value)) {
             $hex = [];
             foreach ($value as $entry) {
-                if (!is_string($entry)) {
-                    continue;
+                if (is_string($entry)) {
+                    $entry = trim($entry);
+                    if (1 === preg_match(self::HEX_PATTERN, $entry)) {
+                        $hex[] = $entry;
+                        continue;
+                    }
+                    $shown = '"'.$entry.'"';
+                } else {
+                    $shown = get_debug_type($entry);
                 }
-                $entry = trim($entry);
-                if (1 === preg_match(self::HEX_PATTERN, $entry)) {
-                    $hex[] = $entry;
-                }
+                $this->io->writeError(sprintf(
+                    '<warning>Invalid hex color %s • expected #RRGGBB</warning>',
+                    $shown,
+                ));
             }
 
             return [] === $hex ? null : $hex;
