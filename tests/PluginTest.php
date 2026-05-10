@@ -945,6 +945,79 @@ final class PluginTest extends TestCase
         self::assertSame('', $io->getOutput());
     }
 
+    #[Test]
+    public function bannerWiderThanTerminalIsSilentlySkipped(): void
+    {
+        $this->writeBanner(str_repeat('x', 50));
+        $this->pinComposerFile();
+        putenv('COLUMNS=20');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertSame('', $io->getOutput());
+    }
+
+    #[Test]
+    public function bannerExactlyTerminalWidthRenders(): void
+    {
+        $this->writeBanner(str_repeat('x', 20));
+        $this->pinComposerFile();
+        putenv('COLUMNS=20');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString("\033[38;2;255;0;0m".str_repeat('x', 20), $io->getOutput());
+    }
+
+    #[Test]
+    public function bannerNarrowerThanTerminalRenders(): void
+    {
+        $this->writeBanner('hi');
+        $this->pinComposerFile();
+        putenv('COLUMNS=200');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString("\033[38;2;255;0;0mhi", $io->getOutput());
+    }
+
+    #[Test]
+    public function multibyteBannerFittingByCharCountRenders(): void
+    {
+        $banner = str_repeat('ä', 10);
+        // Precondition: width fits by char count (10 ≤ 15) but exceeds by byte count (20 > 15).
+        self::assertSame(10, mb_strlen($banner));
+        self::assertSame(20, strlen($banner));
+
+        $this->writeBanner($banner);
+        $this->pinComposerFile();
+        putenv('COLUMNS=15');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString("\033[38;2;255;0;0m", $io->getOutput());
+    }
+
     protected function setUp(): void
     {
         $this->fixtureDir = sys_get_temp_dir().'/composer-fanfare-'.bin2hex(random_bytes(4));
@@ -961,6 +1034,7 @@ final class PluginTest extends TestCase
         }
         putenv('COMPOSER');
         putenv('COMPOSER_FANFARE');
+        putenv('COLUMNS');
     }
 
     /**

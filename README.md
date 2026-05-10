@@ -56,7 +56,7 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
 - `footer` — `true` (default) prints a dim line below the banner with project name + version, PHP version, and locked package count. Set to `false` to hide.
 
 > [!NOTE]
-> The banner falls back to plain text when `NO_COLOR` is set or output isn't a TTY. Composer's `--quiet` mode suppresses it entirely via the IO layer.
+> The banner falls back to plain text when `NO_COLOR` is set or output isn't a TTY. Composer's `--quiet` mode suppresses it entirely via the IO layer. If any banner line is wider than the current terminal, the banner is skipped silently to avoid wrapping artefacts.
 
 ### Disabling
 

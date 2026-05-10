@@ -12,6 +12,7 @@ use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Symfony\Component\Console\Terminal;
 
 /**
  * @internal
@@ -71,6 +72,21 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         }
     }
 
+    /**
+     * @param list<string> $lines
+     */
+    private function exceedsTerminalWidth(array $lines): bool
+    {
+        $width = (new Terminal())->getWidth();
+        foreach ($lines as $line) {
+            if (mb_strlen($line) > $width) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function isOptedOut(): bool
     {
         $env = getenv(self::OPT_OUT_ENV);
@@ -97,6 +113,9 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
 
         $lines = (new TemplateLoader($this->io))->loadLines($template);
         if (null === $lines) {
+            return;
+        }
+        if ($this->exceedsTerminalWidth($lines)) {
             return;
         }
 
