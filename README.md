@@ -58,6 +58,20 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
 > [!NOTE]
 > The banner falls back to plain text when `NO_COLOR` is set or output isn't a TTY. Composer's `--quiet` mode suppresses it entirely via the IO layer.
 
+### Disabling
+
+Skip the banner for a single run by setting `COMPOSER_FANFARE=0` inline:
+
+```bash
+COMPOSER_FANFARE=0 composer install
+```
+
+Or disable it globally for the current shell or CI environment:
+
+```bash
+export COMPOSER_FANFARE=0
+```
+
 ### Setting values from the CLI
 
 If you'd rather not hand-edit `composer.json`, every key can be set with `composer config`:

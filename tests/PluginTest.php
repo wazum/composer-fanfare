@@ -894,6 +894,57 @@ final class PluginTest extends TestCase
         self::assertStringContainsString('expected #RRGGBB', $output);
     }
 
+    #[Test]
+    public function composerFanfareEnvVarSetToZeroSuppressesBanner(): void
+    {
+        $this->writeBanner('hello');
+        $this->pinComposerFile();
+        putenv('COMPOSER_FANFARE=0');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertSame('', $io->getOutput());
+    }
+
+    #[Test]
+    public function composerFanfareEnvVarSetToOneStillRendersBanner(): void
+    {
+        $this->writeBanner('hello');
+        $this->pinComposerFile();
+        putenv('COMPOSER_FANFARE=1');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString("\033[38;2;255;0;0mhello", $io->getOutput());
+    }
+
+    #[Test]
+    public function composerFanfareEnvVarWithSurroundingWhitespaceSuppressesBanner(): void
+    {
+        $this->writeBanner('hello');
+        $this->pinComposerFile();
+        putenv('COMPOSER_FANFARE= 0 ');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertSame('', $io->getOutput());
+    }
+
     protected function setUp(): void
     {
         $this->fixtureDir = sys_get_temp_dir().'/composer-fanfare-'.bin2hex(random_bytes(4));
@@ -909,6 +960,7 @@ final class PluginTest extends TestCase
             @rmdir($this->fixtureDir);
         }
         putenv('COMPOSER');
+        putenv('COMPOSER_FANFARE');
     }
 
     /**

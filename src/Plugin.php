@@ -22,6 +22,8 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     private const HEX_PATTERN = '/^#?[0-9a-fA-F]{6}$/';
     private const RANDOM_KEYWORD = 'random';
     private const NO_VERSION_PLACEHOLDER = 'no-version-set';
+    private const OPT_OUT_ENV = 'COMPOSER_FANFARE';
+    private const OPT_OUT_ENV_VALUE = '0';
 
     private Composer $composer;
     private IOInterface $io;
@@ -59,11 +61,21 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
 
     public function onPostCmd(Event $event): void
     {
+        if ($this->isOptedOut()) {
+            return;
+        }
         try {
             $this->renderBanner();
         } catch (\Throwable) {
             // Banner output is purely cosmetic; never break composer install/update.
         }
+    }
+
+    private function isOptedOut(): bool
+    {
+        $env = getenv(self::OPT_OUT_ENV);
+
+        return false !== $env && self::OPT_OUT_ENV_VALUE === trim($env);
     }
 
     private function renderBanner(): void
