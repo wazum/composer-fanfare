@@ -46,7 +46,11 @@
                 // 0x80–0xBF as a *char start* is malformed UTF-8; the
                 // defensive arm returns 1, observable only with crafted
                 // garbage input.
-                "Wazum\\ComposerFanfare\\Animator::utf8CharLength",
+                "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
+                // delayMicros(0) returns 0, but for an empty banner no sleep
+                // is ever issued — the value is unreachable from the public
+                // API regardless of what 0 mutates to.
+                "Wazum\\ComposerFanfare\\TypewriterAnimation::delayMicros",
             ],
         },
         "IncrementInteger": {
@@ -57,7 +61,8 @@
                 "Wazum\\ComposerFanfare\\Renderer::buildStyledLines",
                 "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
                 // Same reasoning as DecrementInteger above.
-                "Wazum\\ComposerFanfare\\Animator::utf8CharLength",
+                "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
+                "Wazum\\ComposerFanfare\\TypewriterAnimation::delayMicros",
             ],
         },
         "Minus": {
@@ -74,9 +79,6 @@
                 "Wazum\\ComposerFanfare\\TemplateLoader::rootDir",
                 "Wazum\\ComposerFanfare\\TemplateLoader::isAbsolutePath",
             ],
-        },
-        "NotIdentical": {
-            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::rootDir"],
         },
         "Ternary": {
             "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::rootDir"],
@@ -107,17 +109,17 @@
         "MethodCallRemoval": {
             "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
         },
-        // The first/second match arms in Animator::utf8CharLength both return 1.
+        // The first/second match arms in TypewriterAnimation::utf8CharLength both return 1.
         // Removing either leaves the other catching the same input range with
         // the same value — observationally equivalent.
         "MatchArmRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\Animator::utf8CharLength"],
+            "ignore": ["Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength"],
         },
         // ASCII (< 0x80) and continuation bytes (0x80–0xBF) both resolve to a
         // 1-byte chunk, so flipping the < to <= at those boundaries is
         // observationally equivalent for valid UTF-8 input.
         "LessThan": {
-            "ignore": ["Wazum\\ComposerFanfare\\Animator::utf8CharLength"],
+            "ignore": ["Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength"],
         },
         // mb_strlen >= max vs > max in maxLineWidth/colorizeDiagonal: observable
         // only when two lines have the same width and we'd repeat the same value;
@@ -137,8 +139,8 @@
         "FunctionCallRemoval": {
             "ignore": ["Wazum\\ComposerFanfare\\IoAnimationDriver::sleep"],
         },
-        // Animator and static paths produce identical buffered byte sequences
-        // (Animator just chunks the same writes), so flipping the routing
+        // Animation and static paths produce identical buffered byte sequences
+        // (the animator just chunks the same writes), so flipping the routing
         // condition or the canAnimate() conjunction can't be detected via the
         // BufferIO-captured output.
         "NotIdentical": {

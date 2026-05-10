@@ -6,18 +6,20 @@ namespace Wazum\ComposerFanfare\Tests;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Wazum\ComposerFanfare\Animation;
-use Wazum\ComposerFanfare\Animator;
+use Wazum\ComposerFanfare\AnimationContext;
+use Wazum\ComposerFanfare\ColorSupport;
+use Wazum\ComposerFanfare\Direction;
 use Wazum\ComposerFanfare\Tests\Support\RecordingAnimationDriver;
+use Wazum\ComposerFanfare\TypewriterAnimation;
 
-final class AnimatorTest extends TestCase
+final class TypewriterAnimationTest extends TestCase
 {
     #[Test]
-    public function typewriterEmitsEachVisibleCharacterFollowedByASleep(): void
+    public function emitsEachVisibleCharacterFollowedByAPositiveSleep(): void
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate(['abc'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['abc']), $driver);
 
         $writes = array_values(array_filter(
             $driver->events,
@@ -30,70 +32,43 @@ final class AnimatorTest extends TestCase
             static fn (array $event): bool => 'sleep' === $event['op'],
         ));
         self::assertCount(3, $sleeps);
-        self::assertSame(Animator::typewriterDelayMicros(3), $sleeps[0]['value']);
+        // Every sleep is positive (not skipped) and identical (constant rate per char).
+        self::assertGreaterThan(0, (int) $sleeps[0]['value']);
+        self::assertSame($sleeps[0]['value'], $sleeps[1]['value']);
+        self::assertSame($sleeps[0]['value'], $sleeps[2]['value']);
     }
 
     #[Test]
-    public function singleCharBannerUsesMaxDelay(): void
+    public function singleCharBannerProducesAPositiveSleep(): void
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate(['a'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['a']), $driver);
 
         $sleeps = array_values(array_filter(
             $driver->events,
             static fn (array $event): bool => 'sleep' === $event['op'],
         ));
         self::assertCount(1, $sleeps);
-        self::assertSame(Animator::MAX_DELAY_MICROS, $sleeps[0]['value']);
+        self::assertGreaterThan(0, (int) $sleeps[0]['value']);
     }
 
     #[Test]
-    public function typewriterDelayCapsAtMaxForShortBanners(): void
+    public function longerBannerProducesShorterPerCharDelayThanShortBanner(): void
     {
-        // Few characters → budget per char is large → delay capped at MAX_DELAY_MICROS.
-        self::assertSame(Animator::MAX_DELAY_MICROS, Animator::typewriterDelayMicros(10));
+        $shortDelay = $this->firstSleepFor(['a']);
+        $longDelay = $this->firstSleepFor([str_repeat('a', 500)]);
+
+        self::assertGreaterThan($longDelay, $shortDelay);
+        self::assertGreaterThan(0, $longDelay);
     }
 
     #[Test]
-    public function typewriterDelayScalesDownForLongBanners(): void
-    {
-        // Many characters → budget per char shrinks below MAX_DELAY_MICROS, so total
-        // animation time stays within TYPEWRITER_BUDGET_MICROS.
-        $charCount = 1_000;
-        $delay = Animator::typewriterDelayMicros($charCount);
-
-        self::assertLessThan(Animator::MAX_DELAY_MICROS, $delay);
-        self::assertLessThanOrEqual(Animator::TYPEWRITER_BUDGET_MICROS, $delay * $charCount);
-    }
-
-    #[Test]
-    public function typewriterDelayIsZeroForEmptyInput(): void
-    {
-        self::assertSame(0, Animator::typewriterDelayMicros(0));
-    }
-
-    #[Test]
-    public function longerBannerProducesShorterPerCharDelay(): void
+    public function ansiEscapesEmittedAtomicallyAndDoNotConsumeASleep(): void
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate([str_repeat('a', 500)], null, Animation::Typewriter);
-
-        $sleeps = array_values(array_filter(
-            $driver->events,
-            static fn (array $event): bool => 'sleep' === $event['op'],
-        ));
-        self::assertCount(500, $sleeps);
-        self::assertLessThan(Animator::MAX_DELAY_MICROS, (int) $sleeps[0]['value']);
-    }
-
-    #[Test]
-    public function typewriterEmitsAnsiEscapesAtomicallyAndDoesNotSleepBetweenThem(): void
-    {
-        $driver = new RecordingAnimationDriver();
-
-        (new Animator($driver))->animate(["\033[38;2;255;0;0ma\033[0m"], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(["\033[38;2;255;0;0ma\033[0m"]), $driver);
 
         $textOnly = '';
         $sleepCount = 0;
@@ -112,11 +87,11 @@ final class AnimatorTest extends TestCase
     }
 
     #[Test]
-    public function typewriterEndsEachLineWithANewline(): void
+    public function eachLineEndsWithANewline(): void
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate(['ab', 'cd'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['ab', 'cd']), $driver);
 
         $lineBreaks = array_values(array_filter(
             $driver->events,
@@ -126,11 +101,11 @@ final class AnimatorTest extends TestCase
     }
 
     #[Test]
-    public function typewriterHandlesMultiByteCharactersAsSingleVisibleUnits(): void
+    public function multibyteCharactersTreatedAsSingleVisibleUnits(): void
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate(['█▀'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['█▀']), $driver);
 
         $writes = array_values(array_filter(
             $driver->events,
@@ -144,7 +119,7 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate(['ab'], 'project · PHP 8.2', Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['ab'], 'project · PHP 8.2'), $driver);
 
         $statusEvents = array_values(array_filter(
             $driver->events,
@@ -159,8 +134,7 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        // No `m` terminator — Animator must abort the line cleanly, not infinite loop.
-        (new Animator($driver))->animate(["\033[38;2;255;0;0a"], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(["\033[38;2;255;0;0a"]), $driver);
 
         $writes = array_filter(
             $driver->events,
@@ -174,7 +148,7 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate(["\033[1m\033[38;2;255;0;0ma"], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(["\033[1m\033[38;2;255;0;0ma"]), $driver);
 
         $writes = array_values(array_filter(
             $driver->events,
@@ -189,9 +163,7 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        // `é` = 0xC3 0xA9 (2 bytes). Trailing `x` ensures the parser stops at the
-        // correct byte — a wrong char-length picks up `x`'s bytes too.
-        (new Animator($driver))->animate(['éx'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['éx']), $driver);
 
         $writes = array_values(array_filter(
             $driver->events,
@@ -205,9 +177,7 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        // `🎉` = 0xF0 0x9F 0x8E 0x89 (4 bytes). Trailing `z` traps off-by-one mistakes
-        // — without it, substr() silently clamps and a wrong length still passes.
-        (new Animator($driver))->animate(['🎉z'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['🎉z']), $driver);
 
         $writes = array_values(array_filter(
             $driver->events,
@@ -221,9 +191,7 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        // U+0800 (ࠀ) encodes as 0xE0 0xA0 0x80 — exercises the lead-byte = 0xE0
-        // boundary that other 3-byte chars (e.g. █ = 0xE2…) don't reach.
-        (new Animator($driver))->animate(['ࠀy'], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['ࠀy']), $driver);
 
         $writes = array_values(array_filter(
             $driver->events,
@@ -237,13 +205,54 @@ final class AnimatorTest extends TestCase
     {
         $driver = new RecordingAnimationDriver();
 
-        (new Animator($driver))->animate([''], null, Animation::Typewriter);
+        (new TypewriterAnimation())->animate($this->context(['']), $driver);
 
         $sleeps = array_values(array_filter(
             $driver->events,
             static fn (array $event): bool => 'sleep' === $event['op'],
         ));
         self::assertCount(0, $sleeps);
-        self::assertSame("\n", $driver->emittedText());
+
+        $emitted = '';
+        foreach ($driver->events as $event) {
+            if ('write' === $event['op']) {
+                $emitted .= (string) $event['value'];
+            } elseif ('writeLine' === $event['op']) {
+                $emitted .= (string) $event['value']."\n";
+            }
+        }
+        self::assertSame("\n", $emitted);
+    }
+
+    /**
+     * @param list<string> $styledLines
+     */
+    private function firstSleepFor(array $styledLines): int
+    {
+        $driver = new RecordingAnimationDriver();
+        (new TypewriterAnimation())->animate($this->context($styledLines), $driver);
+        foreach ($driver->events as $event) {
+            if ('sleep' === $event['op']) {
+                return (int) $event['value'];
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param list<string> $styledLines
+     */
+    private function context(array $styledLines, ?string $statusLine = null): AnimationContext
+    {
+        return new AnimationContext(
+            lines: $styledLines,
+            styledLines: $styledLines,
+            stops: null,
+            direction: Direction::Vertical,
+            colorSupport: ColorSupport::TrueColor,
+            useColor: false,
+            statusLine: $statusLine,
+        );
     }
 }

@@ -18,4 +18,11 @@ enum Animation: string
     {
         return array_map(static fn (self $case): string => $case->value, self::cases());
     }
+
+    public function newRenderer(): AnimationRenderer
+    {
+        return match ($this) {
+            self::Typewriter => new TypewriterAnimation(),
+        };
+    }
 }

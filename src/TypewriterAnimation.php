@@ -7,59 +7,41 @@ namespace Wazum\ComposerFanfare;
 /**
  * @internal
  */
-final readonly class Animator
+final readonly class TypewriterAnimation implements AnimationRenderer
 {
-    public const MAX_DELAY_MICROS = 800;
-    public const TYPEWRITER_BUDGET_MICROS = 120_000;
-
+    private const MAX_DELAY_MICROS = 800;
+    private const BUDGET_MICROS = 120_000;
     private const ESCAPE_BYTE = "\033";
     private const ESCAPE_TERMINATOR = 'm';
 
-    public function __construct(private AnimationDriver $driver)
+    public function animate(AnimationContext $context, AnimationDriver $driver): void
     {
+        $delay = self::delayMicros($this->countVisibleChars($context->styledLines));
+        foreach ($context->styledLines as $line) {
+            foreach ($this->chunkLine($line) as [$chunk, $isVisible]) {
+                $driver->write($chunk);
+                if ($isVisible) {
+                    $driver->sleep($delay);
+                }
+            }
+            $driver->writeLine('');
+        }
+        if (null !== $context->statusLine && '' !== $context->statusLine) {
+            $driver->writeLine($context->statusLine);
+        }
     }
 
     /**
      * Per-character delay scaled so the whole reveal fits within
-     * TYPEWRITER_BUDGET_MICROS, capped at MAX_DELAY_MICROS for short banners.
+     * BUDGET_MICROS, capped at MAX_DELAY_MICROS for short banners.
      */
-    public static function typewriterDelayMicros(int $visibleCharCount): int
+    private static function delayMicros(int $visibleCharCount): int
     {
         if ($visibleCharCount <= 0) {
             return 0;
         }
 
-        return min(self::MAX_DELAY_MICROS, intdiv(self::TYPEWRITER_BUDGET_MICROS, $visibleCharCount));
-    }
-
-    /**
-     * @param list<string> $lines
-     */
-    public function animate(array $lines, ?string $statusLine, Animation $animation): void
-    {
-        match ($animation) {
-            Animation::Typewriter => $this->typewriter($lines),
-        };
-        if (null !== $statusLine && '' !== $statusLine) {
-            $this->driver->writeLine($statusLine);
-        }
-    }
-
-    /**
-     * @param list<string> $lines
-     */
-    private function typewriter(array $lines): void
-    {
-        $delay = self::typewriterDelayMicros($this->countVisibleChars($lines));
-        foreach ($lines as $line) {
-            foreach ($this->chunkLine($line) as [$chunk, $isVisible]) {
-                $this->driver->write($chunk);
-                if ($isVisible) {
-                    $this->driver->sleep($delay);
-                }
-            }
-            $this->driver->writeLine('');
-        }
+        return min(self::MAX_DELAY_MICROS, intdiv(self::BUDGET_MICROS, $visibleCharCount));
     }
 
     /**

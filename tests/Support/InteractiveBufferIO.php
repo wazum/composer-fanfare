@@ -7,7 +7,7 @@ namespace Wazum\ComposerFanfare\Tests\Support;
 use Composer\IO\BufferIO;
 
 /**
- * BufferIO that reports as interactive — lets us exercise the Animator path
+ * BufferIO that reports as interactive — lets us exercise the animation path
  * without spinning up a real TTY.
  *
  * @internal

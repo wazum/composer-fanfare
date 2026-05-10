@@ -22,7 +22,7 @@ final class RendererAnimationTest extends TestCase
 
         (new Renderer($io))->render(['ab'], ['#ff0000', '#00ff00'], null, Direction::Horizontal, Animation::Typewriter);
 
-        // Animator emits chunks via writeRaw(no-newline) plus a trailing newline-only
+        // The animator emits chunks via writeRaw(no-newline) plus a trailing newline-only
         // writeLine, while the static path emits the whole line via one writeRaw with
         // a newline. Exact-byte match guards against any spurious newlines per chunk.
         self::assertSame(

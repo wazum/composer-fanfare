@@ -45,7 +45,18 @@ final readonly class Renderer
 
         $this->io->writeRaw('');
         if (null !== $animation && $this->canAnimate()) {
-            (new Animator(new IoAnimationDriver($this->io)))->animate($styledLines, $styledStatusLine, $animation);
+            $animation->newRenderer()->animate(
+                new AnimationContext(
+                    lines: $lines,
+                    styledLines: $styledLines,
+                    stops: $stops,
+                    direction: $direction,
+                    colorSupport: $colorSupport,
+                    useColor: $useColor,
+                    statusLine: $styledStatusLine,
+                ),
+                new IoAnimationDriver($this->io),
+            );
         } else {
             foreach ($styledLines as $styled) {
                 $this->io->writeRaw($styled);
