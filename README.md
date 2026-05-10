@@ -2,7 +2,7 @@
 
 Display a colored ASCII banner after `composer install` / `composer update`.
 
-![composer-fanfare in action](art/demo.gif?v=4)
+![composer-fanfare in action](art/demo.gif?v=5)
 
 Every `composer install` ends the same boring way: autoload files generated, then silence.
 
@@ -156,6 +156,9 @@ sudo apt-get install -y toilet       # Debian / Ubuntu
 
 toilet -f pagga "composer-fanfare" > art/banner.txt
 ```
+
+> [!NOTE]
+> Banner output relies on the font your terminal renders monospaced text in. Block-shading glyphs (`█▀▄░` from `pagga`/`smblock`/`block`) and box-drawing glyphs (`┏━┓┃` from `future`/`emboss`) are covered by every modern terminal font (JetBrains Mono, Fira Code, Cascadia, Hack, Menlo). Sparser ranges like braille (`⡠⢀⣀` from `smbraille`) are not — if a glyph shows up as `□`, switch to a font with wider Unicode coverage (DejaVu Sans Mono, Cascadia Code, Iosevka).
 
 ## License
 
