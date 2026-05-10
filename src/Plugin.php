@@ -122,9 +122,10 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         $colors = $this->resolveColors($config['colors'] ?? null);
         $colors = $this->applyTransform($colors, $config['transform'] ?? null);
         $direction = $this->resolveDirection($config['direction'] ?? null);
+        $animation = $this->resolveAnimation($config['animation'] ?? null);
         $statusLine = ($config['footer'] ?? true) === false ? null : $this->buildStatusLine();
 
-        (new Renderer($this->io))->render($lines, $colors, $statusLine, $direction);
+        (new Renderer($this->io))->render($lines, $colors, $statusLine, $direction, $animation);
     }
 
     /**
@@ -150,6 +151,38 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         ));
 
         return $colors;
+    }
+
+    private function resolveAnimation(mixed $value): ?Animation
+    {
+        if (null === $value) {
+            return null;
+        }
+        if (!is_string($value)) {
+            $this->io->writeError(sprintf(
+                '<warning>Invalid animation type %s • expected one of: %s</warning>',
+                get_debug_type($value),
+                implode(', ', Animation::names()),
+            ));
+
+            return null;
+        }
+        $value = trim($value);
+        if ('' === $value) {
+            return null;
+        }
+        $animation = Animation::tryFrom($value);
+        if (null === $animation) {
+            $this->io->writeError(sprintf(
+                '<warning>Unknown animation "%s" • available: %s</warning>',
+                $value,
+                implode(', ', Animation::names()),
+            ));
+
+            return null;
+        }
+
+        return $animation;
     }
 
     private function resolveDirection(mixed $value): Direction

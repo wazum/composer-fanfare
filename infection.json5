@@ -39,9 +39,14 @@
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
                 "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Renderer::buildStyledLines",
                 "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
                 "Wazum\\ComposerFanfare\\ColorSupport::quantizeChannel",
                 "Wazum\\ComposerFanfare\\ColorSupport::rgbToBasicIndex",
+                // 0x80–0xBF as a *char start* is malformed UTF-8; the
+                // defensive arm returns 1, observable only with crafted
+                // garbage input.
+                "Wazum\\ComposerFanfare\\Animator::utf8CharLength",
             ],
         },
         "IncrementInteger": {
@@ -49,7 +54,10 @@
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
                 "Wazum\\ComposerFanfare\\TemplateLoader::isAbsolutePath",
                 "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Renderer::buildStyledLines",
                 "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
+                // Same reasoning as DecrementInteger above.
+                "Wazum\\ComposerFanfare\\Animator::utf8CharLength",
             ],
         },
         "Minus": {
@@ -94,18 +102,68 @@
         "RoundingFamily": {
             "ignore": ["Wazum\\ComposerFanfare\\Renderer::lerpRgb"],
         },
-        // mb_strlen >= max vs > max is observable only when two lines have the
-        // same width and we'd repeat the same value; output is identical.
-        "GreaterThan": {
-            "ignore": [
-                "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
-                "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
-            ],
-        },
         // Plugin's WINDOWS_PATH preg_match runs only on Windows-style absolute paths;
         // not testable from a Linux CI runner without elaborate mocking.
         "MethodCallRemoval": {
             "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
+        },
+        // The first/second match arms in Animator::utf8CharLength both return 1.
+        // Removing either leaves the other catching the same input range with
+        // the same value — observationally equivalent.
+        "MatchArmRemoval": {
+            "ignore": ["Wazum\\ComposerFanfare\\Animator::utf8CharLength"],
+        },
+        // ASCII (< 0x80) and continuation bytes (0x80–0xBF) both resolve to a
+        // 1-byte chunk, so flipping the < to <= at those boundaries is
+        // observationally equivalent for valid UTF-8 input.
+        "LessThan": {
+            "ignore": ["Wazum\\ComposerFanfare\\Animator::utf8CharLength"],
+        },
+        // mb_strlen >= max vs > max in maxLineWidth/colorizeDiagonal: observable
+        // only when two lines have the same width and we'd repeat the same value;
+        // output is identical. sleep() is a pure timing primitive — no byte
+        // output, so its branch condition can't be killed via output assertions
+        // without making tests timing-dependent.
+        "GreaterThan": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
+                "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
+                "Wazum\\ComposerFanfare\\IoAnimationDriver::sleep",
+            ],
+        },
+        "GreaterThanNegotiation": {
+            "ignore": ["Wazum\\ComposerFanfare\\IoAnimationDriver::sleep"],
+        },
+        "FunctionCallRemoval": {
+            "ignore": ["Wazum\\ComposerFanfare\\IoAnimationDriver::sleep"],
+        },
+        // Animator and static paths produce identical buffered byte sequences
+        // (Animator just chunks the same writes), so flipping the routing
+        // condition or the canAnimate() conjunction can't be detected via the
+        // BufferIO-captured output.
+        "NotIdentical": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\TemplateLoader::rootDir",
+                "Wazum\\ComposerFanfare\\Renderer::render",
+            ],
+        },
+        "LogicalAnd": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Renderer::canAnimate",
+            ],
+        },
+        "LogicalAndAllSubExprNegation": {
+            "ignore": ["Wazum\\ComposerFanfare\\Renderer::canAnimate"],
+        },
+        "LogicalAndNegation": {
+            "ignore": ["Wazum\\ComposerFanfare\\Renderer::canAnimate"],
+        },
+        "LogicalAndSingleSubExprNegation": {
+            "ignore": [
+                "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Renderer::canAnimate",
+            ],
         },
     },
 }

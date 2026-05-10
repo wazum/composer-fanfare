@@ -946,6 +946,74 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function unknownAnimationEmitsWarningAndStillRenders(): void
+    {
+        $this->writeBanner('hi');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => '#ff0000',
+                'animation' => 'sparkle',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('Unknown animation "sparkle"', $output);
+        self::assertStringContainsString('available: typewriter', $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mhi", $output);
+    }
+
+    #[Test]
+    public function blankAnimationIsIgnoredSilently(): void
+    {
+        $this->writeBanner('hi');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => '#ff0000',
+                'animation' => '   ',
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringNotContainsString('Unknown animation', $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mhi", $output);
+    }
+
+    #[Test]
+    public function nonStringAnimationEmitsTypeWarning(): void
+    {
+        $this->writeBanner('hi');
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => [
+                'template' => 'banner.txt',
+                'colors' => '#ff0000',
+                'animation' => true,
+            ],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString('Invalid animation type bool', $output);
+        self::assertStringContainsString('expected one of: typewriter', $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mhi", $output);
+    }
+
+    #[Test]
     public function bannerWiderThanTerminalIsSilentlySkipped(): void
     {
         $this->writeBanner(str_repeat('x', 50));

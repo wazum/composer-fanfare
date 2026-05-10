@@ -30,6 +30,7 @@ final readonly class Renderer
         ?array $colors,
         ?string $statusLine,
         Direction $direction = Direction::Vertical,
+        ?Animation $animation = null,
     ): void {
         if ([] === $lines) {
             return;
@@ -39,26 +40,62 @@ final readonly class Renderer
         $colorSupport = ColorSupport::detect($this->io);
         $useColor = null !== $stops && ColorSupport::None !== $colorSupport;
 
+        $styledLines = $this->buildStyledLines($lines, $stops, $useColor, $direction, $colorSupport);
+        $styledStatusLine = $this->buildStyledStatusLine($statusLine, $useColor);
+
+        $this->io->writeRaw('');
+        if (null !== $animation && $this->canAnimate()) {
+            (new Animator(new IoAnimationDriver($this->io)))->animate($styledLines, $styledStatusLine, $animation);
+        } else {
+            foreach ($styledLines as $styled) {
+                $this->io->writeRaw($styled);
+            }
+            if (null !== $styledStatusLine) {
+                $this->io->writeRaw($styledStatusLine);
+            }
+        }
+        $this->io->writeRaw('');
+    }
+
+    /**
+     * @param list<string>                              $lines
+     * @param non-empty-list<array{int, int, int}>|null $stops
+     *
+     * @return list<string>
+     */
+    private function buildStyledLines(array $lines, ?array $stops, bool $useColor, Direction $direction, ColorSupport $colorSupport): array
+    {
         $rowCount = count($lines);
         $maxWidth = Direction::Diagonal === $direction ? $this->maxLineWidth($lines) : 0;
 
-        $this->io->writeRaw('');
+        $output = [];
         foreach ($lines as $row => $line) {
-            if (!$useColor) {
-                $this->io->writeRaw($line);
+            if (!$useColor || null === $stops) {
+                $output[] = $line;
                 continue;
             }
-            $this->io->writeRaw(match ($direction) {
+            $output[] = match ($direction) {
                 Direction::Vertical => $this->colorizeWholeLine($line, $this->sampleGradient($stops, $this->fraction($row, $rowCount)), $colorSupport),
                 Direction::Horizontal => $this->colorizeHorizontal($line, $stops, $colorSupport),
                 Direction::Diagonal => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops, $colorSupport),
-            });
+            };
         }
 
-        if (null !== $statusLine && '' !== $statusLine) {
-            $this->io->writeRaw($useColor ? self::ANSI_DIM.$statusLine.self::ANSI_RESET : $statusLine);
+        return $output;
+    }
+
+    private function buildStyledStatusLine(?string $statusLine, bool $useColor): ?string
+    {
+        if (null === $statusLine || '' === $statusLine) {
+            return null;
         }
-        $this->io->writeRaw('');
+
+        return $useColor ? self::ANSI_DIM.$statusLine.self::ANSI_RESET : $statusLine;
+    }
+
+    private function canAnimate(): bool
+    {
+        return $this->io->isDecorated() && $this->io->isInteractive();
     }
 
     /**
