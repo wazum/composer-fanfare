@@ -58,6 +58,30 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
 > [!NOTE]
 > The banner falls back to plain text when `NO_COLOR` is set or output isn't a TTY. Composer's `--quiet` mode suppresses it entirely via the IO layer.
 
+### Setting values from the CLI
+
+If you'd rather not hand-edit `composer.json`, every key can be set with `composer config`:
+
+```bash
+composer config extra.fanfare.template art/banner.txt
+composer config extra.fanfare.colors synthwave
+composer config extra.fanfare.direction diagonal
+composer config extra.fanfare.transform reverse
+```
+
+Booleans and arrays need `--json` so the value is stored with the right type:
+
+```bash
+composer config --json extra.fanfare.colors '["#ff6ec7","#7873f5"]'
+composer config --json extra.fanfare.footer false
+```
+
+Remove a key with `--unset`:
+
+```bash
+composer config --unset extra.fanfare.transform
+```
+
 ### Color depth
 
 Truecolor escapes are emitted by default. The renderer downgrades automatically based on `COLORTERM` and `TERM`:
