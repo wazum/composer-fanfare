@@ -41,7 +41,10 @@ final readonly class TemplateLoader
             $normalized = substr($normalized, 0, -1);
         }
 
-        return explode("\n", $normalized);
+        return array_map(
+            static fn (string $line): string => '' === trim($line) ? '' : $line,
+            explode("\n", $normalized),
+        );
     }
 
     private function loadContents(string $template): ?string

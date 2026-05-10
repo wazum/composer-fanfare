@@ -946,6 +946,33 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function spaceOnlyLinesAreNormalizedToEmptyPreservingLineBreaks(): void
+    {
+        // figlet/toilet sometimes emit lines that look blank but actually
+        // contain spaces. Coloring those spaces is ugly, but the *line break*
+        // is intentional layout — we must keep it.
+        $this->writeBanner("a\n   \nb");
+        $this->pinComposerFile();
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[38;2;255;0;0ma", $output);
+        self::assertStringContainsString("\033[38;2;255;0;0mb", $output);
+        // The middle row no longer carries any spaces or an empty escape pair.
+        self::assertStringNotContainsString("\033[38;2;255;0;0m   ", $output);
+        self::assertStringNotContainsString("\033[38;2;255;0;0m\033[0m", $output);
+        // Only two colored escapes — one per meaningful row — but the line break
+        // between them survives as a bare newline.
+        self::assertSame(2, substr_count($output, "\033[38;2;255;0;0m"));
+    }
+
+    #[Test]
     public function unknownAnimationEmitsWarningAndStillRenders(): void
     {
         $this->writeBanner('hi');

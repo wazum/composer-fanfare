@@ -70,7 +70,7 @@ final readonly class Renderer
 
         $output = [];
         foreach ($lines as $row => $line) {
-            if (!$useColor || null === $stops) {
+            if (!$useColor || null === $stops || '' === $line) {
                 $output[] = $line;
                 continue;
             }

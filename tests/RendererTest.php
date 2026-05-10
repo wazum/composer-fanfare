@@ -24,6 +24,27 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
+    public function emptyLineEmitsBareNewlineWithoutEscapeWrapper(): void
+    {
+        $io = $this->decoratedIo();
+
+        (new Renderer($io))->render(['a', '', 'b'], ['#ff0000'], null);
+
+        $output = $io->getOutput();
+        // Meaningful rows still wrapped.
+        self::assertSame(2, substr_count($output, "\033[38;2;255;0;0m"));
+        // No empty escape pair for the blank row.
+        self::assertStringNotContainsString("\033[38;2;255;0;0m\033[0m", $output);
+        // Line break between "a" and "b" preserved (newline for "a" plus newline for empty row).
+        $aPosition = strpos($output, '0;0ma');
+        $bPosition = strpos($output, '0;0mb');
+        self::assertNotFalse($aPosition);
+        self::assertNotFalse($bPosition);
+        $between = substr($output, $aPosition, $bPosition - $aPosition);
+        self::assertSame(2, substr_count($between, "\n"));
+    }
+
+    #[Test]
     public function plainOutputWhenColorsIsNull(): void
     {
         $io = $this->decoratedIo();
