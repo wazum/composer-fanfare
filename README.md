@@ -34,7 +34,7 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
     "extra": {
         "fanfare": {
             "template": "art/banner.txt",
-            "colors": "rainbow"
+            "colors": "sunset"
         }
     }
 }
