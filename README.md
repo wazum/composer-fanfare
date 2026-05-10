@@ -1,5 +1,10 @@
 # composer-fanfare
 
+[![Latest Version](https://img.shields.io/packagist/v/wazum/composer-fanfare.svg)](https://packagist.org/packages/wazum/composer-fanfare)
+[![CI](https://github.com/wazum/composer-fanfare/actions/workflows/ci.yml/badge.svg)](https://github.com/wazum/composer-fanfare/actions/workflows/ci.yml)
+[![PHP Version](https://img.shields.io/packagist/php-v/wazum/composer-fanfare.svg)](https://packagist.org/packages/wazum/composer-fanfare)
+[![License](https://img.shields.io/packagist/l/wazum/composer-fanfare.svg)](LICENSE)
+
 Display a colored ASCII banner after `composer install` / `composer update`.
 
 ![composer-fanfare in action](art/demo.gif?v=5)
