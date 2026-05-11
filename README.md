@@ -59,7 +59,8 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
 - `transform` — optional palette transform applied after color resolution:
   - `"reverse"` — reverses the stop order (e.g. `sunset` reversed → sunrise)
 - `animation` — optional reveal animation:
-  - `"typewriter"` — types each visible character with a small delay (~2 ms/char)
+  - `"typewriter"` — types each visible character with a small per-character delay
+  - `"shimmer"` — slides the gradient across the banner; vertical/horizontal rotate the static colors, diagonal does a smooth phase shift across the whole plane
   - omit for an instant render. Skipped automatically in non-TTY / non-decorated terminals.
 - `footer` — `true` (default) prints a dim line below the banner with project name + version, PHP version, and locked package count. Set to `false` to hide.
 

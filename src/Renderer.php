@@ -86,7 +86,7 @@ final readonly class Renderer
                 continue;
             }
             $output[] = match ($direction) {
-                Direction::Vertical => $this->colorizeWholeLine($line, $this->sampleGradient($stops, $this->fraction($row, $rowCount)), $colorSupport),
+                Direction::Vertical => $this->colorizeWholeLine($line, Gradient::sample($stops, $this->fraction($row, $rowCount)), $colorSupport),
                 Direction::Horizontal => $this->colorizeHorizontal($line, $stops, $colorSupport),
                 Direction::Diagonal => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops, $colorSupport),
             };
@@ -166,7 +166,7 @@ final readonly class Renderer
                 $output .= $char;
                 continue;
             }
-            $rgb = $this->sampleGradient($stops, $this->fraction($visibleIndex, $visibleCount));
+            $rgb = Gradient::sample($stops, $this->fraction($visibleIndex, $visibleCount));
             ++$visibleIndex;
             if ($rgb !== $previousRgb) {
                 $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
@@ -196,7 +196,7 @@ final readonly class Renderer
                 continue;
             }
             $columnFraction = $maxWidth > 1 ? $col / ($maxWidth - 1) : 0.0;
-            $rgb = $this->sampleGradient($stops, ($rowFraction + $columnFraction) / 2);
+            $rgb = Gradient::sample($stops, ($rowFraction + $columnFraction) / 2);
             if ($rgb !== $previousRgb) {
                 $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
                 $previousRgb = $rgb;
@@ -210,44 +210,6 @@ final readonly class Renderer
     private function fraction(int $index, int $total): float
     {
         return $total > 1 ? $index / ($total - 1) : 0.0;
-    }
-
-    /**
-     * @param non-empty-list<array{int, int, int}> $stops
-     *
-     * @return array{int, int, int}
-     */
-    private function sampleGradient(array $stops, float $f): array
-    {
-        $count = count($stops);
-        if (1 === $count) {
-            return $stops[0];
-        }
-        $f = max(0.0, min(1.0, $f));
-        $segments = $count - 1;
-        $scaled = $f * $segments;
-        $idx = (int) floor($scaled);
-        if ($idx >= $segments) {
-            return $stops[$count - 1];
-        }
-        $t = $scaled - $idx;
-
-        return $this->lerpRgb($stops[$idx], $stops[$idx + 1], $t);
-    }
-
-    /**
-     * @param array{int, int, int} $a
-     * @param array{int, int, int} $b
-     *
-     * @return array{int, int, int}
-     */
-    private function lerpRgb(array $a, array $b, float $t): array
-    {
-        return [
-            (int) round($a[0] + ($b[0] - $a[0]) * $t),
-            (int) round($a[1] + ($b[1] - $a[1]) * $t),
-            (int) round($a[2] + ($b[2] - $a[2]) * $t),
-        ];
     }
 
     /**

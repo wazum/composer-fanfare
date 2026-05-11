@@ -10,6 +10,7 @@ namespace Wazum\ComposerFanfare;
 enum Animation: string
 {
     case Typewriter = 'typewriter';
+    case Shimmer = 'shimmer';
 
     /**
      * @return list<string>
@@ -23,6 +24,7 @@ enum Animation: string
     {
         return match ($this) {
             self::Typewriter => new TypewriterAnimation(),
+            self::Shimmer => new ShimmerAnimation(),
         };
     }
 }

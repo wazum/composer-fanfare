@@ -51,6 +51,28 @@
                 // is ever issued — the value is unreachable from the public
                 // API regardless of what 0 mutates to.
                 "Wazum\\ComposerFanfare\\TypewriterAnimation::delayMicros",
+                // ShimmerAnimation calibration constants (MIN_FRAMES, MAX_FRAMES,
+                // TOTAL_BUDGET_MICROS) — small adjustments leave behaviour intact.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::frameCount",
+                // animate(): last-frame settle check `frame === frameCount - 1`
+                // mutated to `-0` makes the check never fire, but the falls-through
+                // phase formula gives phase = (frameCount-1)/(frameCount-1) = 1.0
+                // which wraps to 0 in every direction (vertical/horizontal:
+                // `round(rowCount * 1.0) % rowCount = 0`; diagonal: the
+                // `combined > 1.0` branch subtracts 1.0 and lands back on base).
+                // Behaviour is identical to the unmutated settle.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
+                // max($n, $count) → max($n-1, $count): for empty input we'd
+                // return -1 instead of 0, but `Renderer::render` rejects empty
+                // banners upstream. For non-empty input the loop always
+                // overrides the initial value, so this is unreachable from the
+                // public API.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxLineWidth",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxVisibleCount",
+                // `max(1, $rowCount)` → `max(0, $rowCount)`: identical for any
+                // non-empty banner (rowCount ≥ 1). The line-125 ternary masks
+                // any sampleIndex change when rowCount is exactly 1.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
             ],
         },
         "IncrementInteger": {
@@ -63,12 +85,23 @@
                 // Same reasoning as DecrementInteger above.
                 "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
                 "Wazum\\ComposerFanfare\\TypewriterAnimation::delayMicros",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::frameCount",
+                // `max(1, $rowCount)` → `max(2, $rowCount)`: for rowCount ≥ 2
+                // identical; for rowCount = 1 the next-line ternary returns
+                // 0.0 unconditionally, so the changed sampleIndex never reaches
+                // a different colour.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
             ],
         },
         "Minus": {
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
-                "Wazum\\ComposerFanfare\\Renderer::lerpRgb",
+                "Wazum\\ComposerFanfare\\Gradient::lerpRgb",
+                // Same as the DEC case on line 52 — flipping to `+` makes
+                // the settle check `frame === frameCount + 1`, which never
+                // matches, so phase falls to the formula and still wraps to
+                // a static-equivalent shift on the last frame.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
             ],
         },
         // realpath / filesize / file_get_contents only return false in pathological
@@ -90,19 +123,38 @@
             "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
         },
         // (int) casts on round() / hexdec() are defensive — sprintf '%d' coerces
-        // floats to int representation identically.
+        // floats to int representation identically. ShimmerAnimation's
+        // `(int) round($phase * $cycleLength)` is similarly defensive: round()
+        // already returns an integer-valued float, and PHP's `%` operator
+        // coerces float operands to int so the downstream sampleIndex is
+        // identical.
         "CastInt": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Renderer::sampleGradient",
-                "Wazum\\ComposerFanfare\\Renderer::lerpRgb",
+                "Wazum\\ComposerFanfare\\Gradient::sample",
+                "Wazum\\ComposerFanfare\\Gradient::lerpRgb",
                 "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
                 "Wazum\\ComposerFanfare\\ColorSupport::rgbToCubeIndex",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
             ],
+        },
+        // Cast on `$context->statusLine`: after the `null !== && '' !==` guard
+        // the value is already string; the cast is a strict-types
+        // belt-and-suspenders that PHP doesn't need at runtime.
+        "CastString": {
+            "ignore": ["Wazum\\ComposerFanfare\\ShimmerAnimation::animate"],
+        },
+        // animate(): last-frame settle returns 0.0; mutating to 1.0 still
+        // wraps to 0 in every direction (fmod-on-1.0 = 0, round(rowCount * 1.0)
+        // % rowCount = 0). The pre-render's literal 0.0 has the same
+        // equivalence with phase 1.0.
+        "OneZeroFloat": {
+            "ignore": ["Wazum\\ComposerFanfare\\ShimmerAnimation::animate"],
         },
         // round vs ceil produce identical results for half-integer fractions used
         // by our gradient interpolation; not a meaningful bug surface.
         "RoundingFamily": {
-            "ignore": ["Wazum\\ComposerFanfare\\Renderer::lerpRgb"],
+            "ignore": ["Wazum\\ComposerFanfare\\Gradient::lerpRgb"],
         },
         // Plugin's WINDOWS_PATH preg_match runs only on Windows-style absolute paths;
         // not testable from a Linux CI runner without elaborate mocking.
@@ -131,6 +183,10 @@
                 "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
                 "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
                 "Wazum\\ComposerFanfare\\IoAnimationDriver::sleep",
+                // mb_strlen >= max vs > max only differs when two lines tie
+                // for the longest width and we'd repeat the same value.
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxLineWidth",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxVisibleCount",
             ],
         },
         "GreaterThanNegotiation": {
