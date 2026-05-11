@@ -93,20 +93,24 @@ final class DripAnimationTest extends TestCase
     #[Test]
     public function cellRevealOrderIsNotStrictlyLeftToRight(): void
     {
-        // 2×2 banner, no status: rowCount=2, statusOffset=0.
-        // Row 0 → linesUp=2, row 1 → linesUp=1. Source-order reveal would be
-        // [(2,0), (2,1), (1,0), (1,1)]. Asserting the observed order differs
-        // detects a missing shuffle (1/24 false-positive rate).
-        $sequential = [[2, 0], [2, 1], [1, 0], [1, 1]];
+        // 5×5 banner (25 cells): probability that shuffle() returns the
+        // strict source-order sequence is 1/25! ≈ 6×10⁻²⁶ — effectively
+        // zero, so this test is reliable on CI even on a single run.
+        $sequential = [];
+        for ($row = 0; $row < 5; ++$row) {
+            for ($col = 0; $col < 5; ++$col) {
+                $sequential[] = [5 - $row, $col];
+            }
+        }
 
         $driver = new RecordingAnimationDriver();
         (new DripAnimation())->animate(
-            $this->context(['ab', 'cd'], stops: [[255, 0, 0], [0, 0, 255]]),
+            $this->context(array_fill(0, 5, 'xxxxx'), stops: [[255, 0, 0], [0, 0, 255]]),
             $driver,
         );
 
         $observedOrder = $this->extractCellOrder($driver);
-        self::assertCount(4, $observedOrder);
+        self::assertCount(25, $observedOrder);
         self::assertNotSame($sequential, $observedOrder);
     }
 
