@@ -12,7 +12,6 @@ final readonly class ShimmerAnimation implements AnimationRenderer
     private const TOTAL_BUDGET_MICROS = 400_000;
     private const MIN_FRAMES = 4;
     private const MAX_FRAMES = 16;
-    private const ANSI_RESET = "\033[0m";
     private const CURSOR_UP_FORMAT = "\033[%dF";
 
     public function animate(AnimationContext $context, AnimationDriver $driver): void
@@ -30,7 +29,7 @@ final readonly class ShimmerAnimation implements AnimationRenderer
         }
 
         $rowCount = count($context->lines);
-        $maxWidth = $this->maxLineWidth($context->lines);
+        $maxWidth = LineStyler::maxLineWidth($context->lines);
         $frameCount = $this->frameCount($context, $rowCount);
         $perFrameMicros = intdiv(self::TOTAL_BUDGET_MICROS, $frameCount - 1);
         $hasStatus = null !== $context->statusLine && '' !== $context->statusLine;
@@ -58,7 +57,7 @@ final readonly class ShimmerAnimation implements AnimationRenderer
     {
         $cycleLength = match ($context->direction) {
             Direction::Vertical => max(1, $rowCount),
-            Direction::Horizontal => max(1, $this->maxVisibleCount($context->lines)),
+            Direction::Horizontal => max(1, LineStyler::maxVisibleCount($context->lines)),
             // Diagonal uses continuous phase, so the cycle is purely a frame budget.
             Direction::Diagonal => self::MAX_FRAMES,
         };
@@ -124,7 +123,7 @@ final readonly class ShimmerAnimation implements AnimationRenderer
         $sampleIndex = ($row + $shift) % max(1, $rowCount);
         $rgb = Gradient::sample($stops, $rowCount > 1 ? $sampleIndex / ($rowCount - 1) : 0.0);
 
-        return $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]).$line.self::ANSI_RESET;
+        return LineStyler::wholeLine($line, $rgb, $colorSupport);
     }
 
     /**
@@ -132,37 +131,18 @@ final readonly class ShimmerAnimation implements AnimationRenderer
      */
     private function styleHorizontal(string $line, array $stops, ColorSupport $colorSupport, float $phase): string
     {
-        $chars = mb_str_split($line);
-        $visibleCount = 0;
-        foreach ($chars as $char) {
-            if (' ' !== $char) {
-                ++$visibleCount;
-            }
-        }
+        $visibleCount = LineStyler::countVisibleChars($line);
         if (0 === $visibleCount) {
             return $line;
         }
         $shift = (int) round($phase * $visibleCount);
-
-        $output = '';
-        $visibleIndex = 0;
-        $previousRgb = null;
-        foreach ($chars as $char) {
-            if (' ' === $char) {
-                $output .= $char;
-                continue;
-            }
-            $sampleIndex = ($visibleIndex + $shift) % $visibleCount;
-            $rgb = Gradient::sample($stops, $visibleCount > 1 ? $sampleIndex / ($visibleCount - 1) : 0.0);
-            ++$visibleIndex;
-            if ($rgb !== $previousRgb) {
-                $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
-                $previousRgb = $rgb;
-            }
-            $output .= $char;
+        $rgbs = [];
+        for ($i = 0; $i < $visibleCount; ++$i) {
+            $sampleIndex = ($i + $shift) % $visibleCount;
+            $rgbs[] = Gradient::sample($stops, $visibleCount > 1 ? $sampleIndex / ($visibleCount - 1) : 0.0);
         }
 
-        return $output.self::ANSI_RESET;
+        return LineStyler::byVisibleChar($line, $rgbs, $colorSupport);
     }
 
     /**
@@ -175,63 +155,16 @@ final readonly class ShimmerAnimation implements AnimationRenderer
     private function styleDiagonal(string $line, int $row, int $rowCount, int $maxWidth, array $stops, ColorSupport $colorSupport, float $phase): string
     {
         $rowFraction = $rowCount > 1 ? $row / ($rowCount - 1) : 0.0;
-        $output = '';
-        $previousRgb = null;
-        foreach (mb_str_split($line) as $col => $char) {
-            if (' ' === $char) {
-                $output .= $char;
-                continue;
-            }
+        $rgbs = [];
+        for ($col = 0; $col < $maxWidth; ++$col) {
             $columnFraction = $maxWidth > 1 ? $col / ($maxWidth - 1) : 0.0;
             $combined = ($rowFraction + $columnFraction) / 2 + $phase;
             // Wrap > 1 only — `<=` keeps an exact 1.0 boundary on the last
             // stop instead of folding it back to the first.
             $shifted = $combined <= 1.0 ? $combined : $combined - 1.0;
-            $rgb = Gradient::sample($stops, $shifted);
-            if ($rgb !== $previousRgb) {
-                $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
-                $previousRgb = $rgb;
-            }
-            $output .= $char;
+            $rgbs[] = Gradient::sample($stops, $shifted);
         }
 
-        return $output.self::ANSI_RESET;
-    }
-
-    /**
-     * @param list<string> $lines
-     */
-    private function maxLineWidth(array $lines): int
-    {
-        $max = 0;
-        foreach ($lines as $line) {
-            $width = mb_strlen($line);
-            if ($width > $max) {
-                $max = $width;
-            }
-        }
-
-        return $max;
-    }
-
-    /**
-     * @param list<string> $lines
-     */
-    private function maxVisibleCount(array $lines): int
-    {
-        $max = 0;
-        foreach ($lines as $line) {
-            $visible = 0;
-            foreach (mb_str_split($line) as $char) {
-                if (' ' !== $char) {
-                    ++$visible;
-                }
-            }
-            if ($visible > $max) {
-                $max = $visible;
-            }
-        }
-
-        return $max;
+        return LineStyler::byColumn($line, $rgbs, $colorSupport);
     }
 }

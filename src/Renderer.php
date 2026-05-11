@@ -77,7 +77,7 @@ final readonly class Renderer
     private function buildStyledLines(array $lines, ?array $stops, bool $useColor, Direction $direction, ColorSupport $colorSupport): array
     {
         $rowCount = count($lines);
-        $maxWidth = Direction::Diagonal === $direction ? $this->maxLineWidth($lines) : 0;
+        $maxWidth = Direction::Diagonal === $direction ? LineStyler::maxLineWidth($lines) : 0;
 
         $output = [];
         foreach ($lines as $row => $line) {
@@ -86,7 +86,7 @@ final readonly class Renderer
                 continue;
             }
             $output[] = match ($direction) {
-                Direction::Vertical => $this->colorizeWholeLine($line, Gradient::sample($stops, $this->fraction($row, $rowCount)), $colorSupport),
+                Direction::Vertical => LineStyler::wholeLine($line, Gradient::sample($stops, $this->fraction($row, $rowCount)), $colorSupport),
                 Direction::Horizontal => $this->colorizeHorizontal($line, $stops, $colorSupport),
                 Direction::Diagonal => $this->colorizeDiagonal($line, $row, $rowCount, $maxWidth, $stops, $colorSupport),
             };
@@ -131,51 +131,20 @@ final readonly class Renderer
     }
 
     /**
-     * @param array{int, int, int} $rgb
-     */
-    private function colorizeWholeLine(string $text, array $rgb, ColorSupport $colorSupport): string
-    {
-        return $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]).$text.self::ANSI_RESET;
-    }
-
-    /**
      * @param non-empty-list<array{int, int, int}> $stops
      */
     private function colorizeHorizontal(string $text, array $stops, ColorSupport $colorSupport): string
     {
-        if ('' === $text) {
-            return '';
-        }
-
-        $chars = mb_str_split($text);
-        $visibleCount = 0;
-        foreach ($chars as $char) {
-            if (' ' !== $char) {
-                ++$visibleCount;
-            }
-        }
+        $visibleCount = LineStyler::countVisibleChars($text);
         if (0 === $visibleCount) {
             return $text;
         }
-
-        $output = '';
-        $visibleIndex = 0;
-        $previousRgb = null;
-        foreach ($chars as $char) {
-            if (' ' === $char) {
-                $output .= $char;
-                continue;
-            }
-            $rgb = Gradient::sample($stops, $this->fraction($visibleIndex, $visibleCount));
-            ++$visibleIndex;
-            if ($rgb !== $previousRgb) {
-                $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
-                $previousRgb = $rgb;
-            }
-            $output .= $char;
+        $rgbs = [];
+        for ($i = 0; $i < $visibleCount; ++$i) {
+            $rgbs[] = Gradient::sample($stops, $this->fraction($i, $visibleCount));
         }
 
-        return $output.self::ANSI_RESET;
+        return LineStyler::byVisibleChar($text, $rgbs, $colorSupport);
     }
 
     /**
@@ -183,49 +152,19 @@ final readonly class Renderer
      */
     private function colorizeDiagonal(string $text, int $row, int $rowCount, int $maxWidth, array $stops, ColorSupport $colorSupport): string
     {
-        if ('' === $text) {
-            return '';
-        }
-
-        $rowFraction = $rowCount > 1 ? $row / ($rowCount - 1) : 0.0;
-        $output = '';
-        $previousRgb = null;
-        foreach (mb_str_split($text) as $col => $char) {
-            if (' ' === $char) {
-                $output .= $char;
-                continue;
-            }
+        $rowFraction = $this->fraction($row, $rowCount);
+        $rgbs = [];
+        for ($col = 0; $col < $maxWidth; ++$col) {
             $columnFraction = $maxWidth > 1 ? $col / ($maxWidth - 1) : 0.0;
-            $rgb = Gradient::sample($stops, ($rowFraction + $columnFraction) / 2);
-            if ($rgb !== $previousRgb) {
-                $output .= $colorSupport->escape($rgb[0], $rgb[1], $rgb[2]);
-                $previousRgb = $rgb;
-            }
-            $output .= $char;
+            $rgbs[] = Gradient::sample($stops, ($rowFraction + $columnFraction) / 2);
         }
 
-        return $output.self::ANSI_RESET;
+        return LineStyler::byColumn($text, $rgbs, $colorSupport);
     }
 
     private function fraction(int $index, int $total): float
     {
         return $total > 1 ? $index / ($total - 1) : 0.0;
-    }
-
-    /**
-     * @param list<string> $lines
-     */
-    private function maxLineWidth(array $lines): int
-    {
-        $max = 0;
-        foreach ($lines as $line) {
-            $width = mb_strlen($line);
-            if ($width > $max) {
-                $max = $width;
-            }
-        }
-
-        return $max;
     }
 
     /**

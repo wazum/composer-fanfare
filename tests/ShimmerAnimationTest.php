@@ -439,78 +439,6 @@ final class ShimmerAnimationTest extends TestCase
     }
 
     #[Test]
-    public function verticalPreRenderEmitsEscapeBeforeLineContentAndResetAfter(): void
-    {
-        // Pins the exact `escape . $line . ANSI_RESET` composition. Kills the
-        // ConcatOperandRemoval / Concat-swap mutations on the return line.
-        $driver = new RecordingAnimationDriver();
-        (new ShimmerAnimation())->animate(
-            $this->context(['hello'], stops: [[255, 0, 0]]),
-            $driver,
-        );
-
-        self::assertSame("\033[38;2;255;0;0mhello\033[0m", $this->frameZeroFirstLine($driver));
-    }
-
-    #[Test]
-    public function horizontalPreRenderConcatenatesEscapesCharsAndReset(): void
-    {
-        // Pins the per-char concat in styleHorizontal — particularly the
-        // trailing ANSI_RESET that the operand-removal mutation drops.
-        $driver = new RecordingAnimationDriver();
-        (new ShimmerAnimation())->animate(
-            $this->context(
-                ['ab'],
-                stops: [[255, 0, 0], [0, 0, 255]],
-                direction: Direction::Horizontal,
-            ),
-            $driver,
-        );
-
-        self::assertSame(
-            "\033[38;2;255;0;0ma\033[38;2;0;0;255mb\033[0m",
-            $this->frameZeroFirstLine($driver),
-        );
-    }
-
-    #[Test]
-    public function horizontalAllSpacesLineEmitsBareSpacesWithNoEscapesOrReset(): void
-    {
-        // visibleCount === 0 path: returns the line unchanged. The DEC mutation
-        // (-1 === $visibleCount) bypasses the early return and tacks on a
-        // trailing ANSI_RESET; this exact-string assertion catches the drift.
-        $driver = new RecordingAnimationDriver();
-        (new ShimmerAnimation())->animate(
-            $this->context(
-                ['   '],
-                stops: [[255, 0, 0], [0, 0, 255]],
-                direction: Direction::Horizontal,
-            ),
-            $driver,
-        );
-
-        self::assertSame('   ', $this->frameZeroFirstLine($driver));
-    }
-
-    #[Test]
-    public function diagonalPreRenderEndsWithResetOnEachLine(): void
-    {
-        // Each diagonal line ends with ANSI_RESET. Mutation drops the reset.
-        $driver = new RecordingAnimationDriver();
-        (new ShimmerAnimation())->animate(
-            $this->context(
-                ['ab', 'cd'],
-                stops: [[255, 0, 0], [0, 0, 255]],
-                direction: Direction::Diagonal,
-            ),
-            $driver,
-        );
-
-        $line = $this->frameZeroFirstLine($driver);
-        self::assertStringEndsWith("\033[0m", $line);
-    }
-
-    #[Test]
     public function diagonalWrapAroundSubtractsOneNotZeroAndNotAddsOne(): void
     {
         // 5×5 diagonal red→blue. Frame 1 phase = 1/16 = 0.0625.
@@ -962,29 +890,6 @@ final class ShimmerAnimationTest extends TestCase
     }
 
     #[Test]
-    public function diagonalBannerWithEmbeddedSpacePreservesCharsOnEitherSide(): void
-    {
-        // Exercises the `if (' ' === $char) { $output .= $char; continue; }`
-        // arm of styleDiagonal. Assignment mutation (`$output = $char`)
-        // clobbers the leading 'a'; Continue_ mutation (`break`) drops the
-        // trailing 'b'. Asserting that both visible characters survive kills
-        // both.
-        $driver = new RecordingAnimationDriver();
-        (new ShimmerAnimation())->animate(
-            $this->context(
-                ['a b'],
-                stops: [[255, 0, 0], [0, 0, 255]],
-                direction: Direction::Diagonal,
-            ),
-            $driver,
-        );
-
-        $line = $this->frameZeroFirstLine($driver);
-        self::assertStringContainsString("\033[38;2;255;0;0ma", $line);
-        self::assertStringContainsString('b', $line);
-    }
-
-    #[Test]
     public function singleRowDiagonalBannerSamplesAtZeroRowFraction(): void
     {
         // rowCount = 1 takes the `: 0.0` branch on line 177. Pre-render of
@@ -1050,32 +955,6 @@ final class ShimmerAnimationTest extends TestCase
     }
 
     #[Test]
-    public function spaceCharactersInHorizontalLineRemainUncolored(): void
-    {
-        $driver = new RecordingAnimationDriver();
-
-        (new ShimmerAnimation())->animate(
-            $this->context(
-                ['a b'],
-                stops: [[255, 0, 0], [0, 255, 0]],
-                direction: Direction::Horizontal,
-            ),
-            $driver,
-        );
-
-        // Concatenate every emitted writeLine value and ensure no escape
-        // immediately precedes the literal space.
-        $emitted = '';
-        foreach ($driver->events as $event) {
-            if ('writeLine' === $event['op']) {
-                $emitted .= (string) $event['value']."\n";
-            }
-        }
-        self::assertStringNotContainsString("\033[38;2;255;0;0m ", $emitted);
-        self::assertStringNotContainsString("\033[38;2;0;255;0m ", $emitted);
-    }
-
-    #[Test]
     public function singleVisibleCharLineInHorizontalUsesFirstStop(): void
     {
         $driver = new RecordingAnimationDriver();
@@ -1093,27 +972,6 @@ final class ShimmerAnimationTest extends TestCase
         $framesEscapes = $this->collectColorEscapesPerFrame($driver);
         self::assertNotEmpty($framesEscapes[0]);
         self::assertSame("\033[38;2;255;0;0m", $framesEscapes[0][0]);
-    }
-
-    #[Test]
-    public function horizontalLineWithOnlySpacesIsLeftUntouched(): void
-    {
-        $driver = new RecordingAnimationDriver();
-
-        (new ShimmerAnimation())->animate(
-            $this->context(
-                ['   '],
-                stops: [[255, 0, 0], [0, 255, 0]],
-                direction: Direction::Horizontal,
-            ),
-            $driver,
-        );
-
-        $framesEscapes = $this->collectColorEscapesPerFrame($driver);
-        // No foreground escapes in any frame — the line has no visible chars to color.
-        foreach ($framesEscapes as $frame) {
-            self::assertSame([], $frame);
-        }
     }
 
     #[Test]

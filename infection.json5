@@ -65,14 +65,19 @@
                 // max($n, $count) → max($n-1, $count): for empty input we'd
                 // return -1 instead of 0, but `Renderer::render` rejects empty
                 // banners upstream. For non-empty input the loop always
-                // overrides the initial value, so this is unreachable from the
-                // public API.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxLineWidth",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxVisibleCount",
+                // overrides the initial value, so this is unreachable.
+                "Wazum\\ComposerFanfare\\LineStyler::maxLineWidth",
+                "Wazum\\ComposerFanfare\\LineStyler::maxVisibleCount",
                 // `max(1, $rowCount)` → `max(0, $rowCount)`: identical for any
-                // non-empty banner (rowCount ≥ 1). The line-125 ternary masks
+                // non-empty banner (rowCount ≥ 1). The next-line ternary masks
                 // any sampleIndex change when rowCount is exactly 1.
                 "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
+                // `0 === $visibleCount` → `-1 === $visibleCount`: with the
+                // mutation, an all-spaces line falls through into the empty
+                // rgbs array, but LineStyler::byVisibleChar([]) returns the
+                // line unchanged — same outcome as the original early return.
+                "Wazum\\ComposerFanfare\\Renderer::colorizeHorizontal",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
             ],
         },
         "IncrementInteger": {
@@ -169,9 +174,18 @@
         },
         // ASCII (< 0x80) and continuation bytes (0x80–0xBF) both resolve to a
         // 1-byte chunk, so flipping the < to <= at those boundaries is
-        // observationally equivalent for valid UTF-8 input.
+        // observationally equivalent for valid UTF-8 input. The RGB-precompute
+        // loops `for ($i = 0; $i < $count; ...)` mutate to `<= $count`, which
+        // appends one extra trailing RGB entry that the styler never reads
+        // (visibleIndex/col never reach $count).
         "LessThan": {
-            "ignore": ["Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength"],
+            "ignore": [
+                "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
+                "Wazum\\ComposerFanfare\\Renderer::colorizeHorizontal",
+                "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleDiagonal",
+            ],
         },
         // mb_strlen >= max vs > max in maxLineWidth/colorizeDiagonal: observable
         // only when two lines have the same width and we'd repeat the same value;
@@ -185,8 +199,8 @@
                 "Wazum\\ComposerFanfare\\IoAnimationDriver::sleep",
                 // mb_strlen >= max vs > max only differs when two lines tie
                 // for the longest width and we'd repeat the same value.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxLineWidth",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::maxVisibleCount",
+                "Wazum\\ComposerFanfare\\LineStyler::maxLineWidth",
+                "Wazum\\ComposerFanfare\\LineStyler::maxVisibleCount",
             ],
         },
         "GreaterThanNegotiation": {

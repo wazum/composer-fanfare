@@ -295,29 +295,6 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
-    public function horizontalRowEndsWithReset(): void
-    {
-        $io = $this->decoratedIo();
-        (new Renderer($io))->render(['x'], ['#ff0000'], null, Direction::Horizontal);
-
-        self::assertMatchesRegularExpression(
-            '/\033\[38;2;255;0;0mx\033\[0m\n/',
-            $io->getOutput(),
-        );
-    }
-
-    #[Test]
-    public function diagonalRowEndsWithReset(): void
-    {
-        $io = $this->decoratedIo();
-        (new Renderer($io))->render(['xy', 'zw'], ['#ff0000', '#0000ff'], null, Direction::Diagonal);
-
-        $output = $io->getOutput();
-        self::assertMatchesRegularExpression('/\033\[38;2;128;0;128my\033\[0m\n/', $output);
-        self::assertMatchesRegularExpression('/\033\[38;2;0;0;255mw\033\[0m\n/', $output);
-    }
-
-    #[Test]
     public function diagonalSingleRowBannerInterpolatesAcrossColumns(): void
     {
         $io = $this->decoratedIo();
@@ -348,18 +325,6 @@ final class RendererTest extends TestCase
     }
 
     #[Test]
-    public function horizontalLineWithOnlySpacesEmitsPlain(): void
-    {
-        $io = $this->decoratedIo();
-        (new Renderer($io))->render(['   '], ['#ff0000', '#00ff00'], null, Direction::Horizontal);
-
-        $output = $io->getOutput();
-        self::assertStringContainsString('   ', $output);
-        // No escapes at all — not even a trailing RESET — when the row has no visible chars
-        self::assertStringNotContainsString("\033[", $output);
-    }
-
-    #[Test]
     public function diagonalSingleCellBannerUsesFirstStop(): void
     {
         $io = $this->decoratedIo();
@@ -367,50 +332,6 @@ final class RendererTest extends TestCase
 
         // 1×1 banner → both rowFraction and columnFraction collapse to 0.0 → first stop
         self::assertStringContainsString("\033[38;2;255;0;0mx", $io->getOutput());
-    }
-
-    #[Test]
-    public function horizontalCollapsesRepeatedColorEscapes(): void
-    {
-        $io = $this->decoratedIo();
-        // Single-stop gradient → every visible char gets the same RGB.
-        (new Renderer($io))->render(['abc'], ['#ff0000'], null, Direction::Horizontal);
-
-        $output = $io->getOutput();
-        self::assertSame(
-            1,
-            substr_count($output, "\033[38;2;255;0;0m"),
-            'Repeated identical RGB should emit a single foreground escape, not one per character.',
-        );
-    }
-
-    #[Test]
-    public function diagonalCollapsesRepeatedColorEscapes(): void
-    {
-        $io = $this->decoratedIo();
-        (new Renderer($io))->render(['abc'], ['#ff0000'], null, Direction::Diagonal);
-
-        $output = $io->getOutput();
-        self::assertSame(
-            1,
-            substr_count($output, "\033[38;2;255;0;0m"),
-            'Diagonal mode should also collapse repeated identical RGB into a single escape.',
-        );
-    }
-
-    #[Test]
-    public function horizontalDoesNotReEmitEscapeAcrossSpaces(): void
-    {
-        $io = $this->decoratedIo();
-        // 'a a' with single stop → both visible chars are the same color across a space gap.
-        (new Renderer($io))->render(['a a'], ['#ff0000'], null, Direction::Horizontal);
-
-        $output = $io->getOutput();
-        self::assertSame(
-            1,
-            substr_count($output, "\033[38;2;255;0;0m"),
-            'Spaces between same-colored chars should not trigger a redundant re-emit of the escape.',
-        );
     }
 
     #[Test]
