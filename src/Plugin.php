@@ -79,7 +79,10 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     {
         $width = (new Terminal())->getWidth();
         foreach ($lines as $line) {
-            if (mb_strlen($line) > $width) {
+            // mb_strwidth counts real terminal columns (full-width CJK and
+            // emoji glyphs count as 2), which matches what the terminal does
+            // when deciding whether to wrap.
+            if (mb_strwidth($line) > $width) {
                 return true;
             }
         }

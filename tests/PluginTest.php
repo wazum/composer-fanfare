@@ -1075,6 +1075,28 @@ final class PluginTest extends TestCase
     }
 
     #[Test]
+    public function fullWidthGlyphBannerSkippedWhenItsRealColumnWidthExceedsTerminal(): void
+    {
+        // East-Asian wide chars and many emoji render across TWO terminal
+        // columns each. mb_strlen counts them as 1, but mb_strwidth counts the
+        // true rendered width. A 6-glyph banner of full-width chars is
+        // 12 columns wide on screen — too wide for a 10-column terminal,
+        // but mb_strlen-based clamps would let it through and wrap.
+        $this->writeBanner(str_repeat('界', 6));
+        $this->pinComposerFile();
+        putenv('COLUMNS=10');
+
+        $io = $this->decoratedIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertSame('', $io->getOutput(), 'wide-glyph banner should be skipped, not wrapped');
+    }
+
+    #[Test]
     public function bannerNarrowerThanTerminalRenders(): void
     {
         $this->writeBanner('hi');
