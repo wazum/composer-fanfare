@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Wazum\ComposerFanfare\Tests\Support;
 
-use Wazum\ComposerFanfare\AnimationDriver;
+use Wazum\ComposerFanfare\Animation\AnimationDriver;
 
 /**
  * @internal

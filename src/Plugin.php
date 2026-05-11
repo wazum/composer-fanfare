@@ -13,6 +13,12 @@ use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Terminal;
+use Wazum\ComposerFanfare\Animation\Animation;
+use Wazum\ComposerFanfare\Command\CommandProvider;
+use Wazum\ComposerFanfare\Preset\Direction;
+use Wazum\ComposerFanfare\Preset\Preset;
+use Wazum\ComposerFanfare\Preset\TemplateLoader;
+use Wazum\ComposerFanfare\Rendering\Renderer;
 
 /**
  * @internal

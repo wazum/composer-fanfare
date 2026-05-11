@@ -6,9 +6,9 @@
         // is exercised end-to-end in PreviewRendererTest, but mutation testing
         // adds no value over the integration coverage.
         "excludes": [
-            "PreviewRenderer.php",
-            "PreviewCommand.php",
-            "CommandProvider.php",
+            "Rendering/PreviewRenderer.php",
+            "Command/PreviewCommand.php",
+            "Command/CommandProvider.php",
         ],
     },
     "logs": {
@@ -27,7 +27,7 @@
         // enum data — the readability/coverage trade-off is bad.
         "ArrayItemRemoval": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Preset::colors",
+                "Wazum\\ComposerFanfare\\Preset\\Preset::colors",
             ],
         },
         // random_int bounds are inherently non-deterministic to test without
@@ -38,22 +38,22 @@
         "DecrementInteger": {
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
-                "Wazum\\ComposerFanfare\\Renderer::render",
-                "Wazum\\ComposerFanfare\\Renderer::buildStyledLines",
-                "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
-                "Wazum\\ComposerFanfare\\ColorSupport::quantizeChannel",
-                "Wazum\\ComposerFanfare\\ColorSupport::rgbToBasicIndex",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::buildStyledLines",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::maxLineWidth",
+                "Wazum\\ComposerFanfare\\Rendering\\ColorSupport::quantizeChannel",
+                "Wazum\\ComposerFanfare\\Rendering\\ColorSupport::rgbToBasicIndex",
                 // 0x80–0xBF as a *char start* is malformed UTF-8; the
                 // defensive arm returns 1, observable only with crafted
                 // garbage input.
-                "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
+                "Wazum\\ComposerFanfare\\Animation\\TypewriterAnimation::utf8CharLength",
                 // delayMicros(0) returns 0, but for an empty banner no sleep
                 // is ever issued — the value is unreachable from the public
                 // API regardless of what 0 mutates to.
-                "Wazum\\ComposerFanfare\\TypewriterAnimation::delayMicros",
+                "Wazum\\ComposerFanfare\\Animation\\TypewriterAnimation::delayMicros",
                 // ShimmerAnimation calibration constants (MIN_FRAMES, MAX_FRAMES,
                 // TOTAL_BUDGET_MICROS) — small adjustments leave behaviour intact.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::frameCount",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::frameCount",
                 // animate(): last-frame settle check `frame === frameCount - 1`
                 // mutated to `-0` makes the check never fire, but the falls-through
                 // phase formula gives phase = (frameCount-1)/(frameCount-1) = 1.0
@@ -61,80 +61,80 @@
                 // `round(rowCount * 1.0) % rowCount = 0`; diagonal: the
                 // `combined > 1.0` branch subtracts 1.0 and lands back on base).
                 // Behaviour is identical to the unmutated settle.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::animate",
                 // max($n, $count) → max($n-1, $count): for empty input we'd
                 // return -1 instead of 0, but `Renderer::render` rejects empty
                 // banners upstream. For non-empty input the loop always
                 // overrides the initial value, so this is unreachable.
-                "Wazum\\ComposerFanfare\\LineStyler::maxLineWidth",
-                "Wazum\\ComposerFanfare\\LineStyler::maxVisibleCount",
+                "Wazum\\ComposerFanfare\\Rendering\\LineStyler::maxLineWidth",
+                "Wazum\\ComposerFanfare\\Rendering\\LineStyler::maxVisibleCount",
                 // `max(1, $rowCount)` → `max(0, $rowCount)`: identical for any
                 // non-empty banner (rowCount ≥ 1). The next-line ternary masks
                 // any sampleIndex change when rowCount is exactly 1.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleVertical",
                 // `0 === $visibleCount` → `-1 === $visibleCount`: with the
                 // mutation, an all-spaces line falls through into the empty
                 // rgbs array, but LineStyler::byVisibleChar([]) returns the
                 // line unchanged — same outcome as the original early return.
-                "Wazum\\ComposerFanfare\\Renderer::colorizeHorizontal",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::colorizeHorizontal",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleHorizontal",
                 // DripAnimation: chunk-size and statusOffset calibration in
                 // animate() are equivalence-class identical to ShimmerAnimation
                 // (the LineStyler / Renderer treatment of the same kind of
                 // index-vs-bound math).
-                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\DripAnimation::animate",
             ],
         },
         "IncrementInteger": {
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
-                "Wazum\\ComposerFanfare\\TemplateLoader::isAbsolutePath",
-                "Wazum\\ComposerFanfare\\Renderer::render",
-                "Wazum\\ComposerFanfare\\Renderer::buildStyledLines",
-                "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
+                "Wazum\\ComposerFanfare\\Preset\\TemplateLoader::isAbsolutePath",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::buildStyledLines",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::hexToRgb",
                 // Same reasoning as DecrementInteger above.
-                "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
-                "Wazum\\ComposerFanfare\\TypewriterAnimation::delayMicros",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::frameCount",
+                "Wazum\\ComposerFanfare\\Animation\\TypewriterAnimation::utf8CharLength",
+                "Wazum\\ComposerFanfare\\Animation\\TypewriterAnimation::delayMicros",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::frameCount",
                 // `max(1, $rowCount)` → `max(2, $rowCount)`: for rowCount ≥ 2
                 // identical; for rowCount = 1 the next-line ternary returns
                 // 0.0 unconditionally, so the changed sampleIndex never reaches
                 // a different colour.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleVertical",
                 // DripAnimation calibration constants — same equivalence
                 // class as ShimmerAnimation::animate.
-                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\DripAnimation::animate",
             ],
         },
         "Minus": {
             "ignore": [
                 "Wazum\\ComposerFanfare\\Plugin::resolveColors",
-                "Wazum\\ComposerFanfare\\Gradient::lerpRgb",
+                "Wazum\\ComposerFanfare\\Rendering\\Gradient::lerpRgb",
                 // Same as the DEC case on line 52 — flipping to `+` makes
                 // the settle check `frame === frameCount + 1`, which never
                 // matches, so phase falls to the formula and still wraps to
                 // a static-equivalent shift on the last frame.
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
-                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\DripAnimation::animate",
             ],
         },
         // realpath / filesize / file_get_contents only return false in pathological
         // FS conditions that aren't reproducible in the test environment.
         "FalseValue": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\TemplateLoader::loadContents",
-                "Wazum\\ComposerFanfare\\TemplateLoader::rootDir",
-                "Wazum\\ComposerFanfare\\TemplateLoader::isAbsolutePath",
+                "Wazum\\ComposerFanfare\\Preset\\TemplateLoader::loadContents",
+                "Wazum\\ComposerFanfare\\Preset\\TemplateLoader::rootDir",
+                "Wazum\\ComposerFanfare\\Preset\\TemplateLoader::isAbsolutePath",
             ],
         },
         "Ternary": {
-            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::rootDir"],
+            "ignore": ["Wazum\\ComposerFanfare\\Preset\\TemplateLoader::rootDir"],
         },
         // Removing one DIRECTORY_SEPARATOR side from str_starts_with($real.SEP, $rootReal.SEP)
         // changes observable behavior only when $real == $rootReal exactly, which can't
         // reach this code (caught earlier by is_file).
         "ConcatOperandRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
+            "ignore": ["Wazum\\ComposerFanfare\\Preset\\TemplateLoader::loadContents"],
         },
         // (int) casts on round() / hexdec() are defensive — sprintf '%d' coerces
         // floats to int representation identically. ShimmerAnimation's
@@ -144,12 +144,12 @@
         // identical.
         "CastInt": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Gradient::sample",
-                "Wazum\\ComposerFanfare\\Gradient::lerpRgb",
-                "Wazum\\ComposerFanfare\\Renderer::hexToRgb",
-                "Wazum\\ComposerFanfare\\ColorSupport::rgbToCubeIndex",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
+                "Wazum\\ComposerFanfare\\Rendering\\Gradient::sample",
+                "Wazum\\ComposerFanfare\\Rendering\\Gradient::lerpRgb",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::hexToRgb",
+                "Wazum\\ComposerFanfare\\Rendering\\ColorSupport::rgbToCubeIndex",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleVertical",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleHorizontal",
             ],
         },
         // Cast on `$context->statusLine`: after the `null !== && '' !==` guard
@@ -157,8 +157,8 @@
         // belt-and-suspenders that PHP doesn't need at runtime.
         "CastString": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
-                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\DripAnimation::animate",
             ],
         },
         // animate(): last-frame settle returns 0.0; mutating to 1.0 still
@@ -166,23 +166,23 @@
         // % rowCount = 0). The pre-render's literal 0.0 has the same
         // equivalence with phase 1.0.
         "OneZeroFloat": {
-            "ignore": ["Wazum\\ComposerFanfare\\ShimmerAnimation::animate"],
+            "ignore": ["Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::animate"],
         },
         // round vs ceil produce identical results for half-integer fractions used
         // by our gradient interpolation; not a meaningful bug surface.
         "RoundingFamily": {
-            "ignore": ["Wazum\\ComposerFanfare\\Gradient::lerpRgb"],
+            "ignore": ["Wazum\\ComposerFanfare\\Rendering\\Gradient::lerpRgb"],
         },
         // Plugin's WINDOWS_PATH preg_match runs only on Windows-style absolute paths;
         // not testable from a Linux CI runner without elaborate mocking.
         "MethodCallRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\TemplateLoader::loadContents"],
+            "ignore": ["Wazum\\ComposerFanfare\\Preset\\TemplateLoader::loadContents"],
         },
         // The first/second match arms in TypewriterAnimation::utf8CharLength both return 1.
         // Removing either leaves the other catching the same input range with
         // the same value — observationally equivalent.
         "MatchArmRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength"],
+            "ignore": ["Wazum\\ComposerFanfare\\Animation\\TypewriterAnimation::utf8CharLength"],
         },
         // ASCII (< 0x80) and continuation bytes (0x80–0xBF) both resolve to a
         // 1-byte chunk, so flipping the < to <= at those boundaries is
@@ -192,16 +192,16 @@
         // (visibleIndex/col never reach $count).
         "LessThan": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\TypewriterAnimation::utf8CharLength",
-                "Wazum\\ComposerFanfare\\Renderer::colorizeHorizontal",
-                "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
-                "Wazum\\ComposerFanfare\\ShimmerAnimation::styleDiagonal",
+                "Wazum\\ComposerFanfare\\Animation\\TypewriterAnimation::utf8CharLength",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::colorizeHorizontal",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::colorizeDiagonal",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleHorizontal",
+                "Wazum\\ComposerFanfare\\Animation\\ShimmerAnimation::styleDiagonal",
                 // Drip's chunk loop bounds: shifting `<` to `<=` either runs
                 // one extra empty iteration (no cells left) or skips the last
                 // chunk's tail — caught by the cell-count and chunked-sleep
                 // tests.
-                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\DripAnimation::animate",
             ],
         },
         // mb_strlen >= max vs > max in maxLineWidth/colorizeDiagonal: observable
@@ -211,25 +211,25 @@
         // without making tests timing-dependent.
         "GreaterThan": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Renderer::maxLineWidth",
-                "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
-                "Wazum\\ComposerFanfare\\IoAnimationDriver::sleep",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::maxLineWidth",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::colorizeDiagonal",
+                "Wazum\\ComposerFanfare\\Animation\\IoAnimationDriver::sleep",
                 // mb_strlen >= max vs > max only differs when two lines tie
                 // for the longest width and we'd repeat the same value.
-                "Wazum\\ComposerFanfare\\LineStyler::maxLineWidth",
-                "Wazum\\ComposerFanfare\\LineStyler::maxVisibleCount",
+                "Wazum\\ComposerFanfare\\Rendering\\LineStyler::maxLineWidth",
+                "Wazum\\ComposerFanfare\\Rendering\\LineStyler::maxVisibleCount",
                 // `$cell['col'] > 0` → `>= 0`: with the mutation, col=0
                 // cells emit an extra `\033[0C` which is a terminal no-op
                 // (move forward by zero) — the cursor stays put and the
                 // visible output is identical.
-                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+                "Wazum\\ComposerFanfare\\Animation\\DripAnimation::animate",
             ],
         },
         "GreaterThanNegotiation": {
-            "ignore": ["Wazum\\ComposerFanfare\\IoAnimationDriver::sleep"],
+            "ignore": ["Wazum\\ComposerFanfare\\Animation\\IoAnimationDriver::sleep"],
         },
         "FunctionCallRemoval": {
-            "ignore": ["Wazum\\ComposerFanfare\\IoAnimationDriver::sleep"],
+            "ignore": ["Wazum\\ComposerFanfare\\Animation\\IoAnimationDriver::sleep"],
         },
         // Animation and static paths produce identical buffered byte sequences
         // (the animator just chunks the same writes), so flipping the routing
@@ -237,26 +237,26 @@
         // BufferIO-captured output.
         "NotIdentical": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\TemplateLoader::rootDir",
-                "Wazum\\ComposerFanfare\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Preset\\TemplateLoader::rootDir",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::render",
             ],
         },
         "LogicalAnd": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Renderer::render",
-                "Wazum\\ComposerFanfare\\Renderer::canAnimate",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::canAnimate",
             ],
         },
         "LogicalAndAllSubExprNegation": {
-            "ignore": ["Wazum\\ComposerFanfare\\Renderer::canAnimate"],
+            "ignore": ["Wazum\\ComposerFanfare\\Rendering\\Renderer::canAnimate"],
         },
         "LogicalAndNegation": {
-            "ignore": ["Wazum\\ComposerFanfare\\Renderer::canAnimate"],
+            "ignore": ["Wazum\\ComposerFanfare\\Rendering\\Renderer::canAnimate"],
         },
         "LogicalAndSingleSubExprNegation": {
             "ignore": [
-                "Wazum\\ComposerFanfare\\Renderer::render",
-                "Wazum\\ComposerFanfare\\Renderer::canAnimate",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::render",
+                "Wazum\\ComposerFanfare\\Rendering\\Renderer::canAnimate",
             ],
         },
     },

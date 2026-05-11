@@ -15,9 +15,9 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\StreamOutput;
-use Wazum\ComposerFanfare\CommandProvider;
+use Wazum\ComposerFanfare\Command\CommandProvider;
 use Wazum\ComposerFanfare\Plugin;
-use Wazum\ComposerFanfare\Preset;
+use Wazum\ComposerFanfare\Preset\Preset;
 
 final class PluginTest extends TestCase
 {
