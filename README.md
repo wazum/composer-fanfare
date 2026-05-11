@@ -7,7 +7,7 @@
 
 Display a colored ASCII banner after `composer install` / `composer update`.
 
-![composer-fanfare in action](art/demo.gif?v=7)
+![composer-fanfare in action](art/demo.gif?v=7)[^1]
 
 Every `composer install` ends the same boring way: autoload files generated, then silence.
 
@@ -187,3 +187,5 @@ toilet -f pagga "composer-fanfare" > art/banner.txt
 ## License
 
 MIT.
+
+[^1]: The company names, project names, and email addresses shown in the demo (Atelier Prime, harbor sync, Neon District, meridian labs, lumen forge, etc.) are fictional — invented to illustrate the kind of personal banner you might write for your own project.

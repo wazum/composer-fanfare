@@ -9,14 +9,15 @@ Set TypingSpeed 55ms
 Set Framerate 30
 Set Shell "bash"
 
-# Initial setup: random palette rotates per install, no animation, diagonal.
+# Initial setup: random palette rotates per install. Identities below are
+# fictional — companies, projects, and email addresses are invented.
 Hide
 Type "export PS1='$ ' && cd demo && export TERM=xterm-256color && export COLORTERM=truecolor && composer config extra.fanfare.colors random >/dev/null 2>&1 && clear"
 Enter
 Sleep 400ms
 
-# 1. pagga · diagonal · drip (solid-block font shows individual cells dripping in)
-Type "toilet -f pagga 'composer-fanfare' > art/banner.txt && composer config extra.fanfare.animation drip >/dev/null 2>&1 && composer config extra.fanfare.direction diagonal >/dev/null 2>&1 && clear"
+# 1. pagga · diagonal · drip — "team aurora" @ Atelier Prime GmbH
+Type "python3 ../art/build-banner.py toilet:pagga 'team aurora' 'Another fine project brought to you by Atelier Prime GmbH!' 'aurora@atelierprime.dev' && composer config extra.fanfare.animation drip >/dev/null 2>&1 && composer config extra.fanfare.direction diagonal >/dev/null 2>&1 && clear"
 Enter
 Sleep 400ms
 Show
@@ -24,9 +25,9 @@ Type "composer update --no-audit"
 Enter
 Sleep 1500ms
 
-# 2. future · horizontal · typewriter
+# 2. future · horizontal · typewriter — "harbor sync"
 Hide
-Type "toilet -f future 'composer-fanfare' > art/banner.txt && composer config extra.fanfare.animation typewriter >/dev/null 2>&1 && composer config extra.fanfare.direction horizontal >/dev/null 2>&1 && clear"
+Type "python3 ../art/build-banner.py toilet:future 'harbor sync' 'Crafted with care by the harbor crew.' 'hi@harborsync.io' && composer config extra.fanfare.animation typewriter >/dev/null 2>&1 && composer config extra.fanfare.direction horizontal >/dev/null 2>&1 && clear"
 Enter
 Sleep 400ms
 Show
@@ -34,9 +35,9 @@ Type "composer update --no-audit"
 Enter
 Sleep 1500ms
 
-# 3. emboss · diagonal · shimmer
+# 3. figlet standard · diagonal · shimmer — "neon district"
 Hide
-Type "toilet -f emboss 'composer-fanfare' > art/banner.txt && composer config extra.fanfare.animation shimmer >/dev/null 2>&1 && composer config extra.fanfare.direction diagonal >/dev/null 2>&1 && clear"
+Type "python3 ../art/build-banner.py figlet:standard 'neon district' 'Neon District Co. · curiosity, shipped daily.' 'crew@neondistrict.co' && composer config extra.fanfare.animation shimmer >/dev/null 2>&1 && composer config extra.fanfare.direction diagonal >/dev/null 2>&1 && clear"
 Enter
 Sleep 400ms
 Show
@@ -44,9 +45,9 @@ Type "composer update --no-audit"
 Enter
 Sleep 1500ms
 
-# 4. smblock · vertical · no animation (static baseline)
+# 4. smblock · vertical · no animation (static baseline) — "meridian labs"
 Hide
-Type "toilet -f smblock 'composer-fanfare' > art/banner.txt && composer config --unset extra.fanfare.animation >/dev/null 2>&1 && composer config extra.fanfare.direction vertical >/dev/null 2>&1 && clear"
+Type "python3 ../art/build-banner.py toilet:smblock 'meridian labs' 'Built by the meridian team — keep shipping.' 'team@meridian.studio' && composer config --unset extra.fanfare.animation >/dev/null 2>&1 && composer config extra.fanfare.direction vertical >/dev/null 2>&1 && clear"
 Enter
 Sleep 400ms
 Show
@@ -54,9 +55,9 @@ Type "composer update --no-audit"
 Enter
 Sleep 1500ms
 
-# 5. smbraille · diagonal · shimmer
+# 5. smbraille · diagonal · shimmer — "lumen forge"
 Hide
-Type "toilet -f smbraille 'composer-fanfare' > art/banner.txt && composer config extra.fanfare.animation shimmer >/dev/null 2>&1 && composer config extra.fanfare.direction diagonal >/dev/null 2>&1 && clear"
+Type "python3 ../art/build-banner.py toilet:smbraille 'lumen forge' 'Powered by Lumen Forge — go make something good.' 'forge@lumen.works' && composer config extra.fanfare.animation shimmer >/dev/null 2>&1 && composer config extra.fanfare.direction diagonal >/dev/null 2>&1 && clear"
 Enter
 Sleep 400ms
 Show
