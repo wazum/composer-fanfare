@@ -76,18 +76,13 @@ final class ShimmerColorConsistencyTest extends TestCase
         );
     }
 
-    private string $previousTerm = '';
-
     protected function setUp(): void
     {
         $this->fixtureDir = sys_get_temp_dir().'/composer-fanfare-shimmer-'.bin2hex(random_bytes(4));
         mkdir($this->fixtureDir, 0o700, true);
-        // ColorSupport::detect checks `*-256color` *before* COLORTERM, so we
-        // also have to neutralize TERM — otherwise `xterm-256color` (the
-        // common CI default) would force 256-mode and the truecolor regex
-        // below would match nothing.
-        $this->previousTerm = (string) (getenv('TERM') ?: '');
-        putenv('TERM=xterm');
+        // Force truecolor regardless of host TERM so the test palette comparison
+        // is deterministic; under truecolor, ColorSupport::detect emits
+        // \033[38;2;R;G;Bm which the regex below matches.
         putenv('COLORTERM=truecolor');
     }
 
@@ -101,7 +96,6 @@ final class ShimmerColorConsistencyTest extends TestCase
         }
         putenv('COMPOSER');
         putenv('COLORTERM');
-        '' === $this->previousTerm ? putenv('TERM') : putenv('TERM='.$this->previousTerm);
     }
 
     /**

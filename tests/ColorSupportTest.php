@@ -53,6 +53,18 @@ final class ColorSupportTest extends TestCase
     }
 
     #[Test]
+    public function colortermTruecolorBeatsTerm256ColorWhenBothAreSet(): void
+    {
+        // Modern terminals advertise both `TERM=xterm-256color` (legacy
+        // capabilities baseline) and `COLORTERM=truecolor` (true-colour
+        // upgrade). The truecolor signal must win.
+        putenv('TERM=xterm-256color');
+        putenv('COLORTERM=truecolor');
+
+        self::assertSame(ColorSupport::TrueColor, ColorSupport::detect($this->decoratedIo()));
+    }
+
+    #[Test]
     public function term256ColorYieldsTwoFiveSix(): void
     {
         putenv('TERM=xterm-256color');

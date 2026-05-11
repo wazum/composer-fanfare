@@ -80,13 +80,16 @@ enum ColorSupport: int
             return self::None;
         }
 
-        if (1 === preg_match(self::TWO_FIVE_SIX_PATTERN, $term)) {
-            return self::TwoFiveSix;
-        }
-
+        // COLORTERM is the upgrade signal — modern terminals advertise both
+        // `TERM=xterm-256color` (legacy baseline) and `COLORTERM=truecolor`,
+        // and the truecolor advertisement must win over the 256-color hint.
         $colorTerm = strtolower((string) getenv('COLORTERM'));
         if ('truecolor' === $colorTerm || '24bit' === $colorTerm) {
             return self::TrueColor;
+        }
+
+        if (1 === preg_match(self::TWO_FIVE_SIX_PATTERN, $term)) {
+            return self::TwoFiveSix;
         }
 
         if (1 === preg_match(self::BASIC_TERMINAL_PATTERN, $term)) {
