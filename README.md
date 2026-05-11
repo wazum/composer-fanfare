@@ -61,6 +61,7 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
 - `animation` — optional reveal animation:
   - `"typewriter"` — types each visible character with a small per-character delay
   - `"shimmer"` — slides the gradient across the banner; vertical/horizontal rotate the static colors, diagonal does a smooth phase shift across the whole plane
+  - `"drip"` — reveals cells in random order in small bursts, like raindrops landing on the banner
   - omit for an instant render. Skipped automatically in non-TTY / non-decorated terminals.
 - `footer` — `true` (default) prints a dim line below the banner with project name + version, PHP version, and locked package count. Set to `false` to hide.
 

@@ -233,9 +233,9 @@ final class ShimmerAnimationTest extends TestCase
                 $totalMicros += (int) $event['value'];
             }
         }
-        // Generous bounds: budget is 400_000, so allow 350k–450k.
-        self::assertGreaterThan(350_000, $totalMicros);
-        self::assertLessThan(450_000, $totalMicros);
+        // Generous bounds: budget is 200_000 µs, so allow 150k–250k.
+        self::assertGreaterThan(150_000, $totalMicros);
+        self::assertLessThan(250_000, $totalMicros);
     }
 
     #[Test]

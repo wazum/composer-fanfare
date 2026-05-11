@@ -78,6 +78,11 @@
                 // line unchanged — same outcome as the original early return.
                 "Wazum\\ComposerFanfare\\Renderer::colorizeHorizontal",
                 "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
+                // DripAnimation: chunk-size and statusOffset calibration in
+                // animate() are equivalence-class identical to ShimmerAnimation
+                // (the LineStyler / Renderer treatment of the same kind of
+                // index-vs-bound math).
+                "Wazum\\ComposerFanfare\\DripAnimation::animate",
             ],
         },
         "IncrementInteger": {
@@ -96,6 +101,9 @@
                 // 0.0 unconditionally, so the changed sampleIndex never reaches
                 // a different colour.
                 "Wazum\\ComposerFanfare\\ShimmerAnimation::styleVertical",
+                // DripAnimation calibration constants — same equivalence
+                // class as ShimmerAnimation::animate.
+                "Wazum\\ComposerFanfare\\DripAnimation::animate",
             ],
         },
         "Minus": {
@@ -107,6 +115,7 @@
                 // matches, so phase falls to the formula and still wraps to
                 // a static-equivalent shift on the last frame.
                 "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
+                "Wazum\\ComposerFanfare\\DripAnimation::animate",
             ],
         },
         // realpath / filesize / file_get_contents only return false in pathological
@@ -147,7 +156,10 @@
         // the value is already string; the cast is a strict-types
         // belt-and-suspenders that PHP doesn't need at runtime.
         "CastString": {
-            "ignore": ["Wazum\\ComposerFanfare\\ShimmerAnimation::animate"],
+            "ignore": [
+                "Wazum\\ComposerFanfare\\ShimmerAnimation::animate",
+                "Wazum\\ComposerFanfare\\DripAnimation::animate",
+            ],
         },
         // animate(): last-frame settle returns 0.0; mutating to 1.0 still
         // wraps to 0 in every direction (fmod-on-1.0 = 0, round(rowCount * 1.0)
@@ -185,6 +197,11 @@
                 "Wazum\\ComposerFanfare\\Renderer::colorizeDiagonal",
                 "Wazum\\ComposerFanfare\\ShimmerAnimation::styleHorizontal",
                 "Wazum\\ComposerFanfare\\ShimmerAnimation::styleDiagonal",
+                // Drip's chunk loop bounds: shifting `<` to `<=` either runs
+                // one extra empty iteration (no cells left) or skips the last
+                // chunk's tail — caught by the cell-count and chunked-sleep
+                // tests.
+                "Wazum\\ComposerFanfare\\DripAnimation::animate",
             ],
         },
         // mb_strlen >= max vs > max in maxLineWidth/colorizeDiagonal: observable
@@ -201,6 +218,11 @@
                 // for the longest width and we'd repeat the same value.
                 "Wazum\\ComposerFanfare\\LineStyler::maxLineWidth",
                 "Wazum\\ComposerFanfare\\LineStyler::maxVisibleCount",
+                // `$cell['col'] > 0` → `>= 0`: with the mutation, col=0
+                // cells emit an extra `\033[0C` which is a terminal no-op
+                // (move forward by zero) — the cursor stays put and the
+                // visible output is identical.
+                "Wazum\\ComposerFanfare\\DripAnimation::animate",
             ],
         },
         "GreaterThanNegotiation": {

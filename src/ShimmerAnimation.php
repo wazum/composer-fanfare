@@ -9,7 +9,7 @@ namespace Wazum\ComposerFanfare;
  */
 final readonly class ShimmerAnimation implements AnimationRenderer
 {
-    private const TOTAL_BUDGET_MICROS = 400_000;
+    private const TOTAL_BUDGET_MICROS = 200_000;
     private const MIN_FRAMES = 4;
     private const MAX_FRAMES = 16;
     private const CURSOR_UP_FORMAT = "\033[%dF";

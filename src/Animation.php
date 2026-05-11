@@ -11,6 +11,7 @@ enum Animation: string
 {
     case Typewriter = 'typewriter';
     case Shimmer = 'shimmer';
+    case Drip = 'drip';
 
     /**
      * @return list<string>
@@ -25,6 +26,7 @@ enum Animation: string
         return match ($this) {
             self::Typewriter => new TypewriterAnimation(),
             self::Shimmer => new ShimmerAnimation(),
+            self::Drip => new DripAnimation(),
         };
     }
 }
