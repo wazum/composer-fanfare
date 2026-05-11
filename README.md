@@ -7,7 +7,7 @@
 
 Display a colored ASCII banner after `composer install` / `composer update`.
 
-![composer-fanfare in action](art/demo.gif?v=5)
+![composer-fanfare in action](art/demo.gif?v=7)
 
 Every `composer install` ends the same boring way: autoload files generated, then silence.
 
