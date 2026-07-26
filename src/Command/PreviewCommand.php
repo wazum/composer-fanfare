@@ -8,6 +8,7 @@ use Composer\Command\BaseCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Wazum\ComposerFanfare\Animation\Animation;
 use Wazum\ComposerFanfare\Preset\Direction;
 use Wazum\ComposerFanfare\Preset\TemplateLoader;
 use Wazum\ComposerFanfare\Rendering\PreviewRenderer;
@@ -55,6 +56,12 @@ final class PreviewCommand extends BaseCommand
             InputOption::VALUE_REQUIRED,
             'Palette transform: reverse.',
         );
+        $this->addOption(
+            'animation',
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Reveal animation: typewriter, shimmer, drip.',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -64,6 +71,7 @@ final class PreviewCommand extends BaseCommand
             $this->bannerLines(),
             $this->resolveDirection($input),
             $this->resolveReverse($input),
+            $this->resolveAnimation($input),
         );
 
         if ((bool) $input->getOption('gallery')) {
@@ -112,6 +120,24 @@ final class PreviewCommand extends BaseCommand
         }
 
         return $direction;
+    }
+
+    private function resolveAnimation(InputInterface $input): ?Animation
+    {
+        $value = $input->getOption('animation');
+        if (!is_string($value)) {
+            return null;
+        }
+        $animation = Animation::tryFrom(trim($value));
+        if (null === $animation) {
+            $this->getIO()->writeError(sprintf(
+                '<warning>Unknown animation "%s" • available: %s</warning>',
+                $value,
+                implode(', ', Animation::names()),
+            ));
+        }
+
+        return $animation;
     }
 
     private function resolveReverse(InputInterface $input): bool

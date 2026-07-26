@@ -9,9 +9,11 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\StreamOutput;
+use Wazum\ComposerFanfare\Animation\Animation;
 use Wazum\ComposerFanfare\Preset\Direction;
 use Wazum\ComposerFanfare\Preset\Preset;
 use Wazum\ComposerFanfare\Rendering\PreviewRenderer;
+use Wazum\ComposerFanfare\Tests\Support\InteractiveBufferIO;
 
 final class PreviewRendererTest extends TestCase
 {
@@ -165,6 +167,39 @@ final class PreviewRendererTest extends TestCase
         self::assertStringContainsString(implode(', ', Preset::names()), $io->getOutput());
     }
 
+    #[Test]
+    public function presetPlaysRequestedAnimation(): void
+    {
+        $io = $this->interactiveIo();
+
+        (new PreviewRenderer($io, self::SAMPLE_BANNER, animation: Animation::Typewriter))->preset('fire');
+
+        self::assertStringContainsString("\033[?25l", $io->getOutput());
+    }
+
+    #[Test]
+    public function galleryPlaysRequestedAnimationPerPreset(): void
+    {
+        $io = $this->interactiveIo();
+
+        (new PreviewRenderer($io, self::SAMPLE_BANNER, animation: Animation::Typewriter))->gallery();
+
+        self::assertSame(
+            count(Preset::cases()),
+            substr_count($io->getOutput(), "\033[?25l"),
+        );
+    }
+
+    #[Test]
+    public function presetWithoutAnimationStaysStatic(): void
+    {
+        $io = $this->interactiveIo();
+
+        (new PreviewRenderer($io, self::SAMPLE_BANNER))->preset('fire');
+
+        self::assertStringNotContainsString("\033[?25", $io->getOutput());
+    }
+
     protected function setUp(): void
     {
         putenv('COLORTERM=truecolor');
@@ -178,5 +213,10 @@ final class PreviewRendererTest extends TestCase
     private function decoratedIo(): BufferIO
     {
         return new BufferIO('', StreamOutput::VERBOSITY_NORMAL, new OutputFormatter(true));
+    }
+
+    private function interactiveIo(): InteractiveBufferIO
+    {
+        return new InteractiveBufferIO('', StreamOutput::VERBOSITY_NORMAL, new OutputFormatter(true));
     }
 }

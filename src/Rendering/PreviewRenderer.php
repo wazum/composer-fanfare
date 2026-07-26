@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wazum\ComposerFanfare\Rendering;
 
 use Composer\IO\IOInterface;
+use Wazum\ComposerFanfare\Animation\Animation;
 use Wazum\ComposerFanfare\Preset\Direction;
 use Wazum\ComposerFanfare\Preset\Preset;
 
@@ -27,6 +28,7 @@ final readonly class PreviewRenderer
         private array $bannerLines,
         private Direction $direction = Direction::Vertical,
         private bool $reverse = false,
+        private ?Animation $animation = null,
     ) {
     }
 
@@ -39,6 +41,7 @@ final readonly class PreviewRenderer
                 $this->paletteFor($preset),
                 null,
                 $this->direction,
+                $this->animation,
             );
         }
     }
@@ -61,6 +64,7 @@ final readonly class PreviewRenderer
             $this->paletteFor($preset),
             null,
             $this->direction,
+            $this->animation,
         );
 
         return self::EXIT_OK;
