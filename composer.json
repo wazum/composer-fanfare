@@ -7,8 +7,13 @@
         "composer-plugin",
         "banner",
         "ascii",
+        "ascii-art",
         "ansi",
+        "animation",
         "cli",
+        "terminal",
+        "gradient",
+        "fun",
         "fanfare"
     ],
     "authors": [
