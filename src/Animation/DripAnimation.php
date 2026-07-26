@@ -101,8 +101,14 @@ final readonly class DripAnimation implements AnimationRenderer
         foreach ($context->lines as $row => $line) {
             $visibleCount = LineStyler::countVisibleChars($line);
             $visibleIndex = 0;
+            // Screen column advances by mb_strwidth (CJK/emoji glyphs occupy
+            // two terminal columns), while the gradient fraction keeps using
+            // the character index so drip colors match the static render.
+            $screenColumn = 0;
             foreach (mb_str_split($line) as $col => $char) {
+                $charWidth = mb_strwidth($char);
                 if (' ' === $char) {
+                    $screenColumn += $charWidth;
                     continue;
                 }
                 $rowFraction = $rowCount > 1 ? $row / ($rowCount - 1) : 0.0;
@@ -114,10 +120,11 @@ final readonly class DripAnimation implements AnimationRenderer
                 };
                 $cells[] = [
                     'row' => $row,
-                    'col' => $col,
+                    'col' => $screenColumn,
                     'char' => $char,
                     'rgb' => Gradient::sample($stops, $fraction),
                 ];
+                $screenColumn += $charWidth;
                 ++$visibleIndex;
             }
         }

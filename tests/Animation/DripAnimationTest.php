@@ -404,6 +404,53 @@ final class DripAnimationTest extends TestCase
     }
 
     #[Test]
+    public function cellAfterDoubleWidthGlyphAdvancesCursorByTerminalColumnsNotCharCount(): void
+    {
+        // '界' (U+754C) renders as two terminal columns (mb_strwidth = 2), so
+        // the cell for 'a' sits at screen column 2. A char-index based
+        // `\033[1C` would print 'a' on top of the ideograph's right half.
+        $driver = new RecordingAnimationDriver();
+        (new DripAnimation())->animate(
+            $this->context(['界a'], stops: [[255, 0, 0]]),
+            $driver,
+        );
+
+        $forwardDistances = [];
+        foreach ($driver->events as $event) {
+            if ('write' === $event['op']
+                && 1 === preg_match('/^\033\[(\d+)C$/', (string) $event['value'], $match)) {
+                $forwardDistances[] = (int) $match[1];
+            }
+        }
+        // '界' is at column 0 (no forward escape); only 'a' moves the cursor.
+        self::assertSame([2], $forwardDistances);
+    }
+
+    #[Test]
+    public function screenColumnAccumulatesAcrossSpacesAndGlyphWidths(): void
+    {
+        // 'a 界c' → 'a' at column 0, '界' at 2 (past the space), 'c' at 4
+        // (past the double-width ideograph). Kills the `+=` → `=`/`-=`
+        // mutants on both screen-column accumulations: any of them collapses
+        // the running offset and shifts the later cells.
+        $driver = new RecordingAnimationDriver();
+        (new DripAnimation())->animate(
+            $this->context(['a 界c'], stops: [[255, 0, 0]]),
+            $driver,
+        );
+
+        $forwardDistances = [];
+        foreach ($driver->events as $event) {
+            if ('write' === $event['op']
+                && 1 === preg_match('/^\033\[(\d+)C$/', (string) $event['value'], $match)) {
+                $forwardDistances[] = (int) $match[1];
+            }
+        }
+        sort($forwardDistances);
+        self::assertSame([2, 4], $forwardDistances);
+    }
+
+    #[Test]
     public function multibyteBannerProducesOneCellPerGlyphNotPerByte(): void
     {
         // Catches mb_str_split → str_split: bytes would be treated as cells
