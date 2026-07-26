@@ -259,5 +259,12 @@
                 "Wazum\\ComposerFanfare\\Rendering\\Renderer::canAnimate",
             ],
         },
+        // The finally around the animation exists to restore the cursor if an
+        // animation ever throws — no reachable input makes the current
+        // animations throw, so try/finally vs sequential writes is
+        // observationally equivalent today.
+        "UnwrapFinally": {
+            "ignore": ["Wazum\\ComposerFanfare\\Rendering\\Renderer::render"],
+        },
     },
 }

@@ -17,6 +17,8 @@ final readonly class Renderer
 {
     private const ANSI_RESET = "\033[0m";
     private const ANSI_DIM = "\033[2m";
+    private const ANSI_CURSOR_HIDE = "\033[?25l";
+    private const ANSI_CURSOR_SHOW = "\033[?25h";
     private const HEX_PATTERN = '/^[0-9a-fA-F]{6}$/';
 
     public function __construct(private IOInterface $io)
@@ -49,18 +51,24 @@ final readonly class Renderer
 
         $this->io->writeRaw('');
         if (null !== $animation && $this->canAnimate()) {
-            $animation->newRenderer()->animate(
-                new AnimationContext(
-                    lines: $lines,
-                    styledLines: $styledLines,
-                    stops: $stops,
-                    direction: $direction,
-                    colorSupport: $colorSupport,
-                    useColor: $useColor,
-                    statusLine: $styledStatusLine,
-                ),
-                new IoAnimationDriver($this->io),
-            );
+            $driver = new IoAnimationDriver($this->io);
+            $driver->write(self::ANSI_CURSOR_HIDE);
+            try {
+                $animation->newRenderer()->animate(
+                    new AnimationContext(
+                        lines: $lines,
+                        styledLines: $styledLines,
+                        stops: $stops,
+                        direction: $direction,
+                        colorSupport: $colorSupport,
+                        useColor: $useColor,
+                        statusLine: $styledStatusLine,
+                    ),
+                    $driver,
+                );
+            } finally {
+                $driver->write(self::ANSI_CURSOR_SHOW);
+            }
         } else {
             foreach ($styledLines as $styled) {
                 $this->io->writeRaw($styled);
