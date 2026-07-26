@@ -36,4 +36,12 @@ final class AnimationTest extends TestCase
     {
         self::assertInstanceOf(DripAnimation::class, Animation::Drip->newRenderer());
     }
+
+    #[Test]
+    public function onlyForwardWritingTypewriterDoesNotRedrawInPlace(): void
+    {
+        self::assertFalse(Animation::Typewriter->redrawsInPlace());
+        self::assertTrue(Animation::Shimmer->redrawsInPlace());
+        self::assertTrue(Animation::Drip->redrawsInPlace());
+    }
 }

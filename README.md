@@ -62,7 +62,7 @@ Drop a plain-text template anywhere in your project (e.g. `art/banner.txt`) and 
   - `"typewriter"` — types each visible character with a small per-character delay
   - `"shimmer"` — slides the gradient across the banner; vertical/horizontal rotate the static colors, diagonal does a smooth phase shift across the whole plane
   - `"drip"` — reveals cells in random order in small bursts, like raindrops landing on the banner
-  - omit for an instant render. Skipped automatically in non-TTY / non-decorated terminals.
+  - omit for an instant render. Skipped automatically in non-TTY / non-decorated terminals. `shimmer` and `drip` also fall back to an instant render when the banner is taller than the terminal.
 - `footer` — `true` (default) prints a dim line below the banner with project name + version, PHP version, and locked package count. Set to `false` to hide.
 
 > [!NOTE]

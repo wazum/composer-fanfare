@@ -96,6 +96,13 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         return false;
     }
 
+    private function exceedsTerminalHeight(int $rowCount, bool $hasStatus): bool
+    {
+        // Banner rows + status line + the cursor's own row must fit the
+        // viewport, or in-place redraws move up past the top and garble.
+        return $rowCount + ($hasStatus ? 1 : 0) + 1 > (new Terminal())->getHeight();
+    }
+
     private function isOptedOut(): bool
     {
         $env = getenv(self::OPT_OUT_ENV);
@@ -133,6 +140,12 @@ final class Plugin implements PluginInterface, EventSubscriberInterface, Capable
         $direction = $this->resolveDirection($config['direction'] ?? null);
         $animation = $this->resolveAnimation($config['animation'] ?? null);
         $statusLine = ($config['footer'] ?? true) === false ? null : $this->buildStatusLine();
+        if (null !== $animation
+            && $animation->redrawsInPlace()
+            && $this->exceedsTerminalHeight(count($lines), null !== $statusLine)
+        ) {
+            $animation = null;
+        }
 
         (new Renderer($this->io))->render($lines, $colors, $statusLine, $direction, $animation);
     }

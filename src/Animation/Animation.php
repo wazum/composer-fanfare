@@ -21,6 +21,11 @@ enum Animation: string
         return array_map(static fn (self $case): string => $case->value, self::cases());
     }
 
+    public function redrawsInPlace(): bool
+    {
+        return self::Typewriter !== $this;
+    }
+
     public function newRenderer(): AnimationRenderer
     {
         return match ($this) {

@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\StreamOutput;
 use Wazum\ComposerFanfare\Command\CommandProvider;
 use Wazum\ComposerFanfare\Plugin;
 use Wazum\ComposerFanfare\Preset\Preset;
+use Wazum\ComposerFanfare\Tests\Support\InteractiveBufferIO;
 
 final class PluginTest extends TestCase
 {
@@ -1135,6 +1136,120 @@ final class PluginTest extends TestCase
         self::assertStringContainsString("\033[38;2;255;0;0m", $io->getOutput());
     }
 
+    #[Test]
+    public function inPlaceAnimationOnBannerTallerThanTerminalFallsBackToStaticRender(): void
+    {
+        $this->writeBanner(implode("\n", array_fill(0, 10, 'x')));
+        $this->pinComposerFile();
+        putenv('COLUMNS=80');
+        putenv('LINES=5');
+
+        $io = $this->interactiveIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000', 'animation' => 'shimmer', 'footer' => false],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        $output = $io->getOutput();
+        self::assertStringContainsString("\033[38;2;255;0;0mx", $output);
+        self::assertDoesNotMatchRegularExpression('/\033\[\d+F/', $output, 'no in-place redraw when the banner cannot fit the viewport');
+    }
+
+    #[Test]
+    public function inPlaceAnimationExactlyFittingTerminalHeightStillAnimates(): void
+    {
+        // 4 banner rows + no status + 1 cursor row = 5 ≤ LINES=5.
+        $this->writeBanner(implode("\n", array_fill(0, 4, 'x')));
+        $this->pinComposerFile();
+        putenv('COLUMNS=80');
+        putenv('LINES=5');
+
+        $io = $this->interactiveIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000', 'animation' => 'shimmer', 'footer' => false],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertMatchesRegularExpression('/\033\[4F/', $io->getOutput());
+    }
+
+    #[Test]
+    public function statusLineCountsTowardsTerminalHeightGuard(): void
+    {
+        // 4 banner rows + status line + 1 cursor row = 6 > LINES=5.
+        $this->writeBanner(implode("\n", array_fill(0, 4, 'x')));
+        $this->pinComposerFile();
+        putenv('COLUMNS=80');
+        putenv('LINES=5');
+
+        $io = $this->interactiveIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000', 'animation' => 'shimmer'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertDoesNotMatchRegularExpression('/\033\[\d+F/', $io->getOutput());
+    }
+
+    #[Test]
+    public function statusBannerExactlyFittingViewportStillAnimates(): void
+    {
+        // 3 banner rows + status line + 1 cursor row = 5 ≤ LINES=5.
+        $this->writeBanner(implode("\n", array_fill(0, 3, 'x')));
+        $this->pinComposerFile();
+        putenv('COLUMNS=80');
+        putenv('LINES=5');
+
+        $io = $this->interactiveIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000', 'animation' => 'shimmer'],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertMatchesRegularExpression('/\033\[4F/', $io->getOutput());
+    }
+
+    #[Test]
+    public function bannerOneRowTooTallForViewportFallsBackToStatic(): void
+    {
+        // 5 banner rows + no status + 1 cursor row = 6 > LINES=5.
+        $this->writeBanner(implode("\n", array_fill(0, 5, 'x')));
+        $this->pinComposerFile();
+        putenv('COLUMNS=80');
+        putenv('LINES=5');
+
+        $io = $this->interactiveIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000', 'animation' => 'shimmer', 'footer' => false],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertDoesNotMatchRegularExpression('/\033\[\d+F/', $io->getOutput());
+    }
+
+    #[Test]
+    public function typewriterAnimatesRegardlessOfTerminalHeight(): void
+    {
+        $this->writeBanner(implode("\n", array_fill(0, 10, 'x')));
+        $this->pinComposerFile();
+        putenv('COLUMNS=80');
+        putenv('LINES=5');
+
+        $io = $this->interactiveIo();
+        $composer = $this->makeComposer([
+            'fanfare' => ['template' => 'banner.txt', 'colors' => '#ff0000', 'animation' => 'typewriter', 'footer' => false],
+        ]);
+
+        $this->runPlugin($composer, $io);
+
+        self::assertStringContainsString("\033[38;2;255;0;0mx", $io->getOutput());
+    }
+
     protected function setUp(): void
     {
         $this->fixtureDir = sys_get_temp_dir().'/composer-fanfare-'.bin2hex(random_bytes(4));
@@ -1152,6 +1267,7 @@ final class PluginTest extends TestCase
         putenv('COMPOSER');
         putenv('COMPOSER_FANFARE');
         putenv('COLUMNS');
+        putenv('LINES');
     }
 
     /**
@@ -1189,6 +1305,11 @@ final class PluginTest extends TestCase
     private function decoratedIo(): BufferIO
     {
         return new BufferIO('', StreamOutput::VERBOSITY_NORMAL, new OutputFormatter(true));
+    }
+
+    private function interactiveIo(): InteractiveBufferIO
+    {
+        return new InteractiveBufferIO('', StreamOutput::VERBOSITY_NORMAL, new OutputFormatter(true));
     }
 
     private function makeLockerWithPackageCount(int $count): Locker
