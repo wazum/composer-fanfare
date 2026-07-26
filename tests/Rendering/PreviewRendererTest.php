@@ -165,6 +165,16 @@ final class PreviewRendererTest extends TestCase
         self::assertStringContainsString(implode(', ', Preset::names()), $io->getOutput());
     }
 
+    protected function setUp(): void
+    {
+        putenv('COLORTERM=truecolor');
+    }
+
+    protected function tearDown(): void
+    {
+        putenv('COLORTERM');
+    }
+
     private function decoratedIo(): BufferIO
     {
         return new BufferIO('', StreamOutput::VERBOSITY_NORMAL, new OutputFormatter(true));

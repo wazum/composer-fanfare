@@ -17,7 +17,6 @@ enum ColorSupport: int
     case TrueColor = 3;
 
     private const BASIC_TERMINAL_PATTERN = '/^(ansi|vt\d+|linux)$/';
-    private const TWO_FIVE_SIX_PATTERN = '/-256(color)?$/';
 
     /**
      * Standard 16-color ANSI palette in approximate RGB. Used for nearest-neighbor
@@ -88,15 +87,13 @@ enum ColorSupport: int
             return self::TrueColor;
         }
 
-        if (1 === preg_match(self::TWO_FIVE_SIX_PATTERN, $term)) {
-            return self::TwoFiveSix;
-        }
-
         if (1 === preg_match(self::BASIC_TERMINAL_PATTERN, $term)) {
             return self::Sixteen;
         }
 
-        return self::TrueColor;
+        // Truecolor only when advertised via COLORTERM; for anything else
+        // 256-color is the safe ceiling.
+        return self::TwoFiveSix;
     }
 
     public function escape(int $red, int $green, int $blue): string

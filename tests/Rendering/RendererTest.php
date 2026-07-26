@@ -369,6 +369,7 @@ final class RendererTest extends TestCase
     public function rendersTwoFiveSixEscapesWhenTerminalSupports256(): void
     {
         putenv('TERM=xterm-256color');
+        putenv('COLORTERM');
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['x'], ['#ff0000'], null);
 
@@ -381,6 +382,7 @@ final class RendererTest extends TestCase
     public function rendersSixteenColorEscapesOnBasicTerminal(): void
     {
         putenv('TERM=ansi');
+        putenv('COLORTERM');
         $io = $this->decoratedIo();
         (new Renderer($io))->render(['x'], ['#ff0000'], null);
 
@@ -418,6 +420,11 @@ final class RendererTest extends TestCase
         (new Renderer($io))->render(['hello'], ['#ff0000'], null);
 
         self::assertStringEndsWith("\n\n", $io->getOutput());
+    }
+
+    protected function setUp(): void
+    {
+        putenv('COLORTERM=truecolor');
     }
 
     protected function tearDown(): void

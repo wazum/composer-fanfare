@@ -81,12 +81,23 @@ final class ColorSupportTest extends TestCase
     }
 
     #[Test]
-    public function unknownTerminalDefaultsToTrueColor(): void
+    public function unsetTerminalDefaultsToTwoFiveSix(): void
     {
+        // Without a COLORTERM advertisement, truecolor support is a guess —
+        // 256-color output degrades gracefully everywhere.
         putenv('TERM');
         putenv('COLORTERM');
 
-        self::assertSame(ColorSupport::TrueColor, ColorSupport::detect($this->decoratedIo()));
+        self::assertSame(ColorSupport::TwoFiveSix, ColorSupport::detect($this->decoratedIo()));
+    }
+
+    #[Test]
+    public function unrecognizedTerminalDefaultsToTwoFiveSix(): void
+    {
+        putenv('TERM=screen');
+        putenv('COLORTERM');
+
+        self::assertSame(ColorSupport::TwoFiveSix, ColorSupport::detect($this->decoratedIo()));
     }
 
     #[Test]

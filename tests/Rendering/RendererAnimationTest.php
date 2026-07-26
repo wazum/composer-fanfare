@@ -46,6 +46,16 @@ final class RendererAnimationTest extends TestCase
         );
     }
 
+    protected function setUp(): void
+    {
+        putenv('COLORTERM=truecolor');
+    }
+
+    protected function tearDown(): void
+    {
+        putenv('COLORTERM');
+    }
+
     private function interactiveIo(): InteractiveBufferIO
     {
         return new InteractiveBufferIO('', StreamOutput::VERBOSITY_NORMAL, new OutputFormatter(true));

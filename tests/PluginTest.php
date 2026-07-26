@@ -1254,6 +1254,7 @@ final class PluginTest extends TestCase
     {
         $this->fixtureDir = sys_get_temp_dir().'/composer-fanfare-'.bin2hex(random_bytes(4));
         mkdir($this->fixtureDir, 0o700, true);
+        putenv('COLORTERM=truecolor');
     }
 
     protected function tearDown(): void
@@ -1268,6 +1269,7 @@ final class PluginTest extends TestCase
         putenv('COMPOSER_FANFARE');
         putenv('COLUMNS');
         putenv('LINES');
+        putenv('COLORTERM');
     }
 
     /**
