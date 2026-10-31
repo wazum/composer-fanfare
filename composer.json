@@ -31,9 +31,9 @@
         "composer/composer": "^2.6",
         "ergebnis/composer-normalize": "^2.45",
         "friendsofphp/php-cs-fixer": "^3.65",
-        "infection/infection": "^0.29",
+        "infection/infection": "^0.35",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^13.4"
     },
     "minimum-stability": "stable",
     "autoload": {
